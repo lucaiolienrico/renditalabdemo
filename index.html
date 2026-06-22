@@ -3,16 +3,16 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>RendiLab — Calcola il rendimento del tuo immobile gratis</title>
+<title>Consulenza con RenditaLab — Calcola il rendimento del tuo immobile</title>
 <meta name="description" content="Calcola gratis il rendimento netto, cash flow e ROI del tuo immobile. Fiscalità italiana (cedolare secca, IRPEF), simulazione mutuo, proiezione 10 anni. Nessuna registrazione.">
 <link rel="canonical" href="https://lucaiolienrico.github.io/renditalabdemo/">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://lucaiolienrico.github.io/rendilabdemo/">
-<meta property="og:title" content="RenditaLab — Calcola il rendimento del tuo immobile gratis">
+<meta property="og:title" content="Consulenza con RenditaLab — Calcola il rendimento del tuo immobile">
 <meta property="og:description" content="Cash flow, rendimento netto e proiezione 10 anni in 2 minuti. Gratis, senza registrazione. Fiscalità italiana.">
 <meta property="og:locale" content="it_IT">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="Rendilab — Calcola il rendimento del tuo immobile gratis">
+<meta name="twitter:title" content="Consulenza con RenditaLab — Calcola il rendimento del tuo immobile">
 <meta name="twitter:description" content="Cash flow, rendimento netto e proiezione 10 anni in 2 minuti. Nessuna registrazione.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,700;0,9..144,900;1,9..144,700&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -44,12 +44,16 @@ body{background:var(--bg);color:var(--ink);font-family:var(--sans);min-height:10
   display:none;position:fixed;inset:0;
   background:rgba(245,246,248,.92);
   backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
-  z-index:9999;align-items:center;justify-content:center;
+  z-index:9999;
+  align-items:flex-start;justify-content:center;
+  overflow-y:auto;-webkit-overflow-scrolling:touch;
+  padding:24px 16px;
 }
 #trial-gate.visible{display:flex}
 .gate-box{
-  background:#fff;border-radius:24px;padding:44px 40px;
-  max-width:400px;width:90%;
+  background:#fff;border-radius:24px;padding:36px 28px;
+  max-width:400px;width:100%;
+  margin:auto;
   box-shadow:0 24px 64px rgba(13,17,23,.16),0 4px 16px rgba(13,17,23,.08);
   text-align:center;
 }
@@ -70,8 +74,9 @@ body{background:var(--bg);color:var(--ink);font-family:var(--sans);min-height:10
 
 /* Paywall (trial scaduto) */
 .paywall-box{
-  background:#fff;border-radius:24px;padding:44px 40px;
-  max-width:420px;width:90%;
+  background:#fff;border-radius:24px;padding:36px 28px;
+  max-width:420px;width:100%;
+  margin:auto;
   box-shadow:0 24px 64px rgba(13,17,23,.16);
   text-align:center;
 }
@@ -83,8 +88,7 @@ body{background:var(--bg);color:var(--ink);font-family:var(--sans);min-height:10
 .paywall-title{font-family:var(--display);font-size:1.7rem;font-weight:900;color:var(--ink);letter-spacing:-.03em;margin-bottom:10px}
 .paywall-sub{font-size:.83rem;color:var(--ink2);line-height:1.55;margin-bottom:28px}
 .paywall-paypal{display:flex;flex-direction:column;align-items:center;gap:10px}
-.paywall-reset{font-size:.62rem;color:var(--ink3);margin-top:16px}
-.paywall-reset a{color:var(--ink3);text-decoration:underline;cursor:pointer}
+/* .paywall-reset rimosso: il link di reset pubblico è stato eliminato per sicurezza */
 
 /* ── PROMO STRIP ── */
 .promo{background:var(--green);padding:10px 48px 10px 24px;text-align:center;position:relative;flex-shrink:0}
@@ -264,7 +268,7 @@ footer p{font-size:.7rem;color:var(--ink3)}
 footer a{color:var(--green);text-decoration:none}
 
 /* PayPal override per adattarsi al tema */
-.pp-MYFRVKWSUBESA{
+.pp-2QSJML4S4PFVJ{
   text-align:center;border:none;border-radius:0.25rem;
   min-width:11.625rem;padding:0 2rem;height:2.625rem;
   font-weight:bold;background-color:#FFD140;color:#000000;
@@ -278,7 +282,11 @@ footer a{color:var(--green);text-decoration:none}
   .cf-number{font-size:2.4rem}
   .input-panel{position:relative;top:0!important}
   .metrics{gap:8px}
-  .gate-box,.paywall-box{padding:32px 24px}
+  #trial-gate{padding:16px 12px}
+  .gate-box,.paywall-box{padding:28px 22px}
+  .gate-sub{margin-bottom:18px}
+  .gate-features{margin-bottom:18px}
+  .gate-title,.paywall-title{font-size:1.5rem}
 }
 </style>
 </head>
@@ -301,12 +309,12 @@ footer a{color:var(--green);text-decoration:none}
 <!-- STICKY SHELL: header + tabs -->
 <div class="sticky-shell" id="sticky-shell">
   <header>
-    <a class="logo" href="#" aria-label="RenditaLab demo">
+    <a class="logo" href="#" aria-label="Consulenza con RenditaLab">
       <div class="logo-mark" aria-hidden="true">
         <svg viewBox="0 0 18 18" fill="none" aria-hidden="true"><path d="M3 13L7 8l3 3 5-6" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
       </div>
-      <span class="logo-name">RendiLab</span>
-      <span class="logo-tag" aria-label="Demo gratuita">DEMO GRATUITA</span>
+      <span class="logo-name">Consulenza con RenditaLab</span>
+      <span class="logo-tag" aria-label="Strumento professionale">STRUMENTO PRO</span>
     </a>
   </header>
   <div class="tipo-wrap" role="tablist">
@@ -506,7 +514,7 @@ footer a{color:var(--green);text-decoration:none}
     <div class="cta-card">
       <div class="cta-eyebrow">Vuoi fare di più?</div>
       <h2>Salva l'analisi e genera<br>il <em>report PDF</em> con il tuo brand</h2>
-      <p>Pro a €29,90/mese · 3 giorni gratis · Disdici quando vuoi</p>
+      <p>Accesso annuale a €69,00 · 3 giorni di prova gratuiti inclusi</p>
       <div class="cta-btns">
         <button class="btn-cta-main" onclick="document.getElementById('input-panel').scrollIntoView({behavior:'smooth'})">Prova il calcolatore ↑</button>
         <button class="btn-cta-sec" id="btn-pdf" onclick="generatePDF()">
@@ -514,11 +522,11 @@ footer a{color:var(--green);text-decoration:none}
         </button>
       </div>
       <div class="cta-paypal">
-        <div class="cta-paypal-label">Acquista accesso completo</div>
+        <div class="cta-paypal-label">Accesso annuale · €69,00</div>
         <div>
-          <style>.pp-MYFRVKWSUBESA{text-align:center;border:none;border-radius:0.25rem;min-width:11.625rem;padding:0 2rem;height:2.625rem;font-weight:bold;background-color:#FFD140;color:#000000;font-family:"Helvetica Neue",Arial,sans-serif;font-size:1rem;line-height:1.25rem;cursor:pointer;}</style>
-          <form action="https://www.paypal.com/ncp/payment/MYFRVKWSUBESA" method="post" target="_blank" style="display:inline-grid;justify-items:center;align-content:start;gap:0.5rem;">
-            <input class="pp-MYFRVKWSUBESA" type="submit" value="Acquista ora" />
+          <style>.pp-2QSJML4S4PFVJ{text-align:center;border:none;border-radius:0.25rem;min-width:11.625rem;padding:0 2rem;height:2.625rem;font-weight:bold;background-color:#FFD140;color:#000000;font-family:"Helvetica Neue",Arial,sans-serif;font-size:1rem;line-height:1.25rem;cursor:pointer;}</style>
+          <form action="https://www.paypal.com/ncp/payment/2QSJML4S4PFVJ" method="post" target="_blank" rel="noopener noreferrer" style="display:inline-grid;justify-items:center;align-content:start;gap:0.5rem;">
+            <input class="pp-2QSJML4S4PFVJ" type="submit" value="Acquista ora" />
             <img src="https://www.paypalobjects.com/images/Debit_Credit_APM.svg" alt="cards" />
             <section style="font-size:0.75rem;">Con tecnologia <img src="https://www.paypalobjects.com/paypal-ui/logos/svg/paypal-wordmark-color.svg" alt="paypal" style="height:0.875rem;vertical-align:middle;"/></section>
           </form>
@@ -526,11 +534,11 @@ footer a{color:var(--green);text-decoration:none}
       </div>
       <div class="report-preview" id="rp-wrap">
         <div class="rp-blur">
-          <p>Report completo disponibile con Pro+</p>
+          <p>Report completo incluso nella consulenza</p>
         </div>
         <div class="rp-head">
           <div>
-            <div style="font-family:var(--display);font-size:.9rem;font-weight:700;color:var(--green2)">Consulenza RenditaLab</div>
+            <div style="font-family:var(--display);font-size:.9rem;font-weight:700;color:var(--green2)">Consulenza con RenditaLab</div>
             <div style="font-size:.56rem;color:rgba(255,255,255,.4)">Analisi Finanziaria Immobiliare</div>
           </div>
           <div style="font-size:.58rem;color:rgba(255,255,255,.4);text-align:right">
@@ -550,7 +558,7 @@ footer a{color:var(--green);text-decoration:none}
             <span style="font-size:.56rem;color:var(--ink4)">[ Grafico proiezione · 10 anni ]</span>
           </div>
           <div style="margin-top:10px;padding-top:8px;border-top:1px solid var(--bg3);display:flex;justify-content:space-between">
-            <span style="font-size:.52rem;color:var(--ink4)">Consulenza RenditaLab</span>
+            <span style="font-size:.52rem;color:var(--ink4)">Consulenza con RenditaLab</span>
             <span style="font-size:.52rem;color:var(--ink4)">Documento riservato</span>
           </div>
         </div>
@@ -558,7 +566,7 @@ footer a{color:var(--green);text-decoration:none}
       <div class="trust-row">
         <span class="trust-item">🔒 PayPal · Pagamenti sicuri</span>
         <span class="trust-item">📋 GDPR compliant</span>
-        <span class="trust-item">✕ Disdici in 1 click</span>
+        
       </div>
     </div>
 
@@ -566,7 +574,7 @@ footer a{color:var(--green);text-decoration:none}
 </div>
 
 <footer>
-  <div class="ft-logo">Consulenza RenditaLab</div>
+  <div class="ft-logo">Consulenza con RenditaLab</div>
   <p>Analisi finanziaria immobiliare per il mercato italiano</p>
 </footer>
 
@@ -594,11 +602,29 @@ function getTrialState() {
   }
 }
 
+function buildBonificoBlock() {
+  // Sezione bonifico bancario — PREDISPOSTA ma NON visibile (display:none).
+  // Per attivarla: rimuovere "display:none" dallo style del contenitore.
+  // Compilare IBAN, intestatario e causale prima dell'attivazione.
+  return `
+    <div class="bonifico-block" style="display:none;margin-top:14px;padding:14px 16px;background:var(--bg3);border-radius:var(--r);text-align:left">
+      <div style="font-size:.7rem;font-weight:700;color:var(--ink2);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">Pagamento con bonifico bancario</div>
+      <div style="font-size:.74rem;color:var(--ink2);line-height:1.7">
+        <div><strong>Intestatario:</strong> <span data-bonifico="intestatario">—</span></div>
+        <div><strong>IBAN:</strong> <span data-bonifico="iban">—</span></div>
+        <div><strong>Banca:</strong> <span data-bonifico="banca">—</span></div>
+        <div><strong>Importo:</strong> € 69,00</div>
+        <div><strong>Causale:</strong> <span data-bonifico="causale">Consulenza con RenditaLab — accesso annuale</span></div>
+      </div>
+      <div style="font-size:.62rem;color:var(--ink3);margin-top:8px;font-style:italic">Invia la ricevuta del bonifico per l'attivazione dell'accesso.</div>
+    </div>`
+}
+
 function buildPayPalBlock() {
   return `
-    <style>.pp-MYFRVKWSUBESA{text-align:center;border:none;border-radius:0.25rem;min-width:11.625rem;padding:0 2rem;height:2.625rem;font-weight:bold;background-color:#FFD140;color:#000000;font-family:"Helvetica Neue",Arial,sans-serif;font-size:1rem;line-height:1.25rem;cursor:pointer;}</style>
-    <form action="https://www.paypal.com/ncp/payment/MYFRVKWSUBESA" method="post" target="_blank" style="display:inline-grid;justify-items:center;align-content:start;gap:0.5rem;">
-      <input class="pp-MYFRVKWSUBESA" type="submit" value="Acquista ora" />
+    <style>.pp-2QSJML4S4PFVJ{text-align:center;border:none;border-radius:0.25rem;min-width:11.625rem;padding:0 2rem;height:2.625rem;font-weight:bold;background-color:#FFD140;color:#000000;font-family:"Helvetica Neue",Arial,sans-serif;font-size:1rem;line-height:1.25rem;cursor:pointer;}</style>
+    <form action="https://www.paypal.com/ncp/payment/2QSJML4S4PFVJ" method="post" target="_blank" rel="noopener noreferrer" style="display:inline-grid;justify-items:center;align-content:start;gap:0.5rem;">
+      <input class="pp-2QSJML4S4PFVJ" type="submit" value="Acquista ora" />
       <img src="https://www.paypalobjects.com/images/Debit_Credit_APM.svg" alt="cards" />
       <section style="font-size:0.75rem;">Con tecnologia <img src="https://www.paypalobjects.com/paypal-ui/logos/svg/paypal-wordmark-color.svg" alt="paypal" style="height:0.875rem;vertical-align:middle;"/></section>
     </form>`
@@ -610,13 +636,11 @@ function showPaywall() {
     <div class="paywall-box">
       <div class="paywall-badge">TRIAL SCADUTO</div>
       <h2 class="paywall-title">I tuoi 3 giorni<br>sono terminati</h2>
-      <p class="paywall-sub">Hai esplorato Consulenza RenditaLab. Acquista l'accesso completo per continuare ad analizzare i tuoi investimenti immobiliari.</p>
+      <p class="paywall-sub">Il tuo periodo di prova è terminato. Attiva l'accesso annuale a €69,00 per continuare a usare Consulenza con RenditaLab senza limiti.</p>
       <div class="paywall-paypal">
         ${buildPayPalBlock()}
       </div>
-      <div class="paywall-reset">
-        Hai già acquistato? <a onclick="localStorage.removeItem('${TRIAL_KEY}');location.reload()">Ricarica la pagina</a>
-      </div>
+      ${buildBonificoBlock()}
     </div>`
   gate.classList.add('visible')
   // Blocca lo scroll del body
@@ -641,10 +665,11 @@ function showTrialGate() {
         <div class="gate-feat"><span>✓</span>Modalità Airbnb &amp; Flip</div>
       </div>
       <div class="gate-paypal">
-        <p style="font-size:.72rem;color:var(--ink3);margin-bottom:4px">Oppure acquista subito l'accesso completo:</p>
+        <p style="font-size:.72rem;color:var(--ink3);margin-bottom:4px">Oppure attiva subito l'accesso annuale (€69,00):</p>
         ${buildPayPalBlock()}
       </div>
-      <p class="gate-note">Clicca "Acquista ora" per accesso permanente, oppure chiudi per iniziare il trial gratuito.</p>
+      ${buildBonificoBlock()}
+      <p class="gate-note">Clicca "Acquista ora" per attivare l'accesso annuale (€69,00), oppure inizia il periodo di prova gratuito.</p>
       <button onclick="startTrial()" style="
         margin-top:16px;background:transparent;border:1px solid var(--ink4);
         color:var(--ink2);border-radius:var(--r);padding:9px 20px;
@@ -1033,7 +1058,7 @@ function generatePDF() {
     doc.setFont('helvetica', 'bold')
     doc.setFontSize(13)
     doc.setTextColor(...WHITE)
-    doc.text('Consulenza RenditaLab', M + 15, 13)
+    doc.text('Consulenza con RenditaLab', M + 15, 13)
 
     doc.setFont('helvetica', 'normal')
     doc.setFontSize(7)
@@ -1337,7 +1362,7 @@ function generatePDF() {
       doc.setFont('helvetica', 'normal')
       doc.setFontSize(7)
       doc.setTextColor(...INK3)
-      doc.text('Consulenza RenditaLab — Analisi Finanziaria Immobiliare', M, pageH - 5)
+      doc.text('Consulenza con RenditaLab — Analisi Finanziaria Immobiliare', M, pageH - 5)
       doc.text('Pagina ' + i + ' di ' + pageCount, W - M, pageH - 5, { align: 'right' })
       doc.text('Documento riservato · ' + new Date().toLocaleDateString('it-IT'), W / 2, pageH - 5, { align: 'center' })
     }
