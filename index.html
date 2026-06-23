@@ -19,6 +19,8 @@
 <!-- jsPDF + autoTable: generazione PDF client-side, zero server -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+<!-- Supabase SDK: trial server-side -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -367,12 +369,12 @@ footer a{color:var(--green);text-decoration:none}
       <div class="field">
         <div class="field-row">
           <span class="field-label" id="lbl-canone">Canone mensile</span>
-          <span class="field-val" id="v-canone">€ 900</span>
+          <span class="field-val" id="v-canone">€ 1.250</span>
         </div>
         <div class="track">
           <div class="track-fill" id="tf-canone" style="background:var(--green)"></div>
           <div class="track-thumb" id="tt-canone"></div>
-          <input type="range" id="s-canone" min="200" max="5000" step="50" value="900" oninput="update()" aria-label="Canone">
+          <input type="range" id="s-canone" min="200" max="5000" step="50" value="1250" oninput="update()" aria-label="Canone">
         </div>
         <div class="field-note" id="note-canone" style="display:none"></div>
       </div>
@@ -433,8 +435,8 @@ footer a{color:var(--green);text-decoration:none}
             <div class="track"><div class="track-fill" id="tf-tasso" style="background:#e879a0"></div><div class="track-thumb" id="tt-tasso" style="border-color:#e879a0;box-shadow:0 0 0 3px rgba(232,121,160,.12)"></div><input type="range" id="s-tasso" min="0" max="8" step="0.1" value="3.2" oninput="update()" aria-label="Tasso mutuo"></div>
           </div>
           <div class="field">
-            <div class="field-row"><span class="field-label">Durata mutuo</span><span class="field-val" id="v-anni">20 anni</span></div>
-            <div class="track"><div class="track-fill" id="tf-anni" style="background:#9061ea"></div><div class="track-thumb" id="tt-anni" style="border-color:#9061ea;box-shadow:0 0 0 3px rgba(144,97,234,.12)"></div><input type="range" id="s-anni" min="5" max="30" step="1" value="20" oninput="update()" aria-label="Durata mutuo"></div>
+            <div class="field-row"><span class="field-label">Durata mutuo</span><span class="field-val" id="v-anni">30 anni</span></div>
+            <div class="track"><div class="track-fill" id="tf-anni" style="background:#9061ea"></div><div class="track-thumb" id="tt-anni" style="border-color:#9061ea;box-shadow:0 0 0 3px rgba(144,97,234,.12)"></div><input type="range" id="s-anni" min="5" max="30" step="1" value="30" oninput="update()" aria-label="Durata mutuo"></div>
           </div>
         </div>
       </div>
@@ -457,7 +459,7 @@ footer a{color:var(--green);text-decoration:none}
     <div class="cf-card positive" id="cf-card">
       <div class="cf-tag pos" id="cf-tag">POSITIVO</div>
       <div class="cf-eyebrow">Cash flow mensile</div>
-      <div class="cf-number" id="cf-num">+ € 127</div>
+      <div class="cf-number" id="cf-num">+ € 136</div>
       <div class="cf-desc pos" id="cf-desc">✓ L'operazione genera liquidità ogni mese</div>
     </div>
 
@@ -584,33 +586,29 @@ footer a{color:var(--green);text-decoration:none}
 </footer>
 
 <script>
-// ── TRIAL MANAGEMENT ──
-// Chiave localStorage e durata
-const TRIAL_KEY = 'rl_trial_v1'
-const TRIAL_DAYS = 3
+// ── TRIAL SERVER-SIDE (Supabase) ──
+// Trial 3 giorni verificato SUL SERVER (progetto Supabase "consulenza").
+// Il timestamp di scadenza vive nella tabella `trials`, legato all'email.
+// Non aggirabile da DevTools, incognito o cambio dispositivo/browser.
 
-function getTrialState() {
-  // Legge SENZA scrivere — scrittura solo in startTrial()
-  const raw = localStorage.getItem(TRIAL_KEY)
-  const now = Date.now()
-  if (!raw) {
-    // Nessun trial avviato: né attivo né scaduto
-    return { started: false, expired: false, msLeft: TRIAL_DAYS * 86400000 }
-  }
-  const start = parseInt(raw, 10)
-  const elapsed = now - start
-  const limit = TRIAL_DAYS * 86400000
-  return {
-    started: true,
-    expired: elapsed >= limit,
-    msLeft: Math.max(0, limit - elapsed)
-  }
+const SUPABASE_URL  = 'https://xpnpdkaaeudufupovsxm.supabase.co'
+const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhwbnBka2FhZXVkdWZ1cG92c3htIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIyMDAxMDAsImV4cCI6MjA5Nzc3NjEwMH0.hz4axSF4e56x3-DhrBmQs-99uS0bPtrDg87lbvJQ0-4'
+
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON)
+
+// PayPal (accesso annuale €69,00)
+function buildPayPalBlock() {
+  return `
+    <style>.pp-2QSJML4S4PFVJ{text-align:center;border:none;border-radius:0.25rem;min-width:11.625rem;padding:0 2rem;height:2.625rem;font-weight:bold;background-color:#FFD140;color:#000000;font-family:"Helvetica Neue",Arial,sans-serif;font-size:1rem;line-height:1.25rem;cursor:pointer;}</style>
+    <form action="https://www.paypal.com/ncp/payment/2QSJML4S4PFVJ" method="post" target="_blank" rel="noopener noreferrer" style="display:inline-grid;justify-items:center;align-content:start;gap:0.5rem;">
+      <input class="pp-2QSJML4S4PFVJ" type="submit" value="Acquista ora" />
+      <img src="https://www.paypalobjects.com/images/Debit_Credit_APM.svg" alt="cards" />
+      <section style="font-size:0.75rem;">Con tecnologia <img src="https://www.paypalobjects.com/paypal-ui/logos/svg/paypal-wordmark-color.svg" alt="paypal" style="height:0.875rem;vertical-align:middle;"/></section>
+    </form>`
 }
 
+// Bonifico bancario — predisposto ma nascosto (display:none)
 function buildBonificoBlock() {
-  // Sezione bonifico bancario — PREDISPOSTA ma NON visibile (display:none).
-  // Per attivarla: rimuovere "display:none" dallo style del contenitore.
-  // Compilare IBAN, intestatario e causale prima dell'attivazione.
   return `
     <div class="bonifico-block" style="display:none;margin-top:14px;padding:14px 16px;background:var(--bg3);border-radius:var(--r);text-align:left">
       <div style="font-size:.7rem;font-weight:700;color:var(--ink2);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">Pagamento con bonifico bancario</div>
@@ -625,34 +623,11 @@ function buildBonificoBlock() {
     </div>`
 }
 
-function buildPayPalBlock() {
-  return `
-    <style>.pp-2QSJML4S4PFVJ{text-align:center;border:none;border-radius:0.25rem;min-width:11.625rem;padding:0 2rem;height:2.625rem;font-weight:bold;background-color:#FFD140;color:#000000;font-family:"Helvetica Neue",Arial,sans-serif;font-size:1rem;line-height:1.25rem;cursor:pointer;}</style>
-    <form action="https://www.paypal.com/ncp/payment/2QSJML4S4PFVJ" method="post" target="_blank" rel="noopener noreferrer" style="display:inline-grid;justify-items:center;align-content:start;gap:0.5rem;">
-      <input class="pp-2QSJML4S4PFVJ" type="submit" value="Acquista ora" />
-      <img src="https://www.paypalobjects.com/images/Debit_Credit_APM.svg" alt="cards" />
-      <section style="font-size:0.75rem;">Con tecnologia <img src="https://www.paypalobjects.com/paypal-ui/logos/svg/paypal-wordmark-color.svg" alt="paypal" style="height:0.875rem;vertical-align:middle;"/></section>
-    </form>`
-}
+function lockBody(){ document.body.style.overflow='hidden' }
+function unlockBody(){ document.body.style.overflow='' }
 
-function showPaywall() {
-  const gate = document.getElementById('trial-gate')
-  gate.innerHTML = `
-    <div class="paywall-box">
-      <div class="paywall-badge">TRIAL SCADUTO</div>
-      <h2 class="paywall-title">I tuoi 3 giorni<br>sono terminati</h2>
-      <p class="paywall-sub">Il tuo periodo di prova è terminato. Attiva l'accesso annuale a €69,00 per continuare a usare Consulenza con RenditaLab senza limiti.</p>
-      <div class="paywall-paypal">
-        ${buildPayPalBlock()}
-      </div>
-      ${buildBonificoBlock()}
-    </div>`
-  gate.classList.add('visible')
-  // Blocca lo scroll del body
-  document.body.style.overflow = 'hidden'
-}
-
-function showTrialGate() {
+// Schermata login con email (magic link)
+function showLoginGate(msg) {
   const gate = document.getElementById('trial-gate')
   gate.innerHTML = `
     <div class="gate-box">
@@ -662,72 +637,142 @@ function showTrialGate() {
         </svg>
       </div>
       <h2 class="gate-title">3 giorni gratis</h2>
-      <p class="gate-sub">Accesso completo al calcolatore — cash flow, rendimento netto, proiezione 10 anni, fiscalità italiana.</p>
-      <div class="gate-features">
-        <div class="gate-feat"><span>✓</span>Cedolare secca &amp; IRPEF</div>
-        <div class="gate-feat"><span>✓</span>Simulazione mutuo</div>
-        <div class="gate-feat"><span>✓</span>Proiezione 10 anni</div>
-        <div class="gate-feat"><span>✓</span>Modalità Airbnb &amp; Flip</div>
-      </div>
-      <div class="gate-paypal">
+      <p class="gate-sub">Inserisci la tua email per iniziare la prova gratuita. Ti inviamo un link di accesso, nessuna password.</p>
+      <input id="gate-email" type="email" inputmode="email" placeholder="nome@email.it" style="
+        width:100%;border:1.5px solid var(--ink4);border-radius:10px;padding:11px 14px;
+        font-size:.85rem;font-family:var(--sans);margin-bottom:10px;outline:none">
+      <button id="gate-send" onclick="sendMagicLink()" style="
+        width:100%;background:var(--green);color:#fff;border:none;border-radius:10px;
+        padding:12px;font-size:.85rem;font-weight:600;cursor:pointer;font-family:var(--sans)">
+        Inizia i 3 giorni gratis →
+      </button>
+      <p id="gate-msg" style="font-size:.72rem;color:var(--ink3);margin-top:12px;min-height:18px">${msg||''}</p>
+      <div class="gate-paypal" style="margin-top:8px">
         <p style="font-size:.72rem;color:var(--ink3);margin-bottom:4px">Oppure attiva subito l'accesso annuale (€69,00):</p>
         ${buildPayPalBlock()}
       </div>
       ${buildBonificoBlock()}
-      <p class="gate-note">Clicca "Acquista ora" per attivare l'accesso annuale (€69,00), oppure inizia il periodo di prova gratuito.</p>
-      <button onclick="startTrial()" style="
-        margin-top:16px;background:transparent;border:1px solid var(--ink4);
-        color:var(--ink2);border-radius:var(--r);padding:9px 20px;
-        font-size:.78rem;font-weight:500;cursor:pointer;font-family:var(--sans);width:100%
-      ">Inizia i 3 giorni gratis →</button>
     </div>`
   gate.classList.add('visible')
-  document.body.style.overflow = 'hidden'
+  lockBody()
 }
 
-function startTrial() {
-  // Registra il timestamp se non già presente
-  if (!localStorage.getItem(TRIAL_KEY)) {
-    localStorage.setItem(TRIAL_KEY, Date.now().toString())
+async function sendMagicLink() {
+  const email = (document.getElementById('gate-email')||{}).value
+  const msg = document.getElementById('gate-msg')
+  const btn = document.getElementById('gate-send')
+  if (!email || !email.includes('@')) { if(msg) msg.textContent='Inserisci un indirizzo email valido.'; return }
+  if (btn) { btn.disabled = true; btn.textContent = 'Invio in corso...' }
+  const { error } = await sb.auth.signInWithOtp({
+    email,
+    options: { emailRedirectTo: window.location.href.split('#')[0] }
+  })
+  if (error) {
+    if(msg) msg.textContent = 'Errore: ' + error.message
+    if (btn) { btn.disabled = false; btn.textContent = 'Inizia i 3 giorni gratis →' }
+  } else {
+    if(msg) msg.innerHTML = '✅ Link inviato! Controlla la tua email (anche nello spam) e clicca per accedere.'
+    if (btn) btn.style.display = 'none'
   }
+}
+
+// Schermata trial scaduto → paywall
+function showPaywall() {
+  const gate = document.getElementById('trial-gate')
+  gate.innerHTML = `
+    <div class="paywall-box">
+      <div class="paywall-badge">PROVA TERMINATA</div>
+      <h2 class="paywall-title">I tuoi 3 giorni<br>sono terminati</h2>
+      <p class="paywall-sub">Attiva l'accesso annuale a €69,00 per continuare a usare Consulenza con RenditaLab senza limiti.</p>
+      <div class="paywall-paypal">
+        ${buildPayPalBlock()}
+      </div>
+      ${buildBonificoBlock()}
+      <p style="font-size:.62rem;color:var(--ink3);margin-top:14px">
+        <a onclick="sbLogout()" style="color:var(--ink3);text-decoration:underline;cursor:pointer">Esci / cambia account</a>
+      </p>
+    </div>`
+  gate.classList.add('visible')
+  lockBody()
+}
+
+function hideGate() {
   const gate = document.getElementById('trial-gate')
   gate.classList.remove('visible')
-  document.body.style.overflow = ''
-  showTrialBanner()
+  gate.innerHTML = ''
+  unlockBody()
 }
 
-function showTrialBanner() {
-  const { msLeft } = getTrialState()
-  const totalHours = msLeft / 3600000
-  const hLeft = Math.floor(totalHours)
-  const dLeft = Math.ceil(totalHours / 24)
+async function sbLogout() {
+  await sb.auth.signOut()
+  location.reload()
+}
+
+function showTrialBanner(secondsLeft) {
+  const banner = document.getElementById('trial-banner')
+  if (!banner) return
+  const hLeft = Math.floor(secondsLeft / 3600)
+  const dLeft = Math.ceil(secondsLeft / 86400)
+  banner.style.display = 'block'
+  const buyLink = ` · <a href="#" onclick="document.querySelector('.cta-paypal').scrollIntoView({behavior:'smooth'});return false" style="color:#856404;font-weight:700;text-decoration:underline">Attiva accesso annuale €69,00</a>`
+  banner.innerHTML = hLeft < 24
+    ? `⏳ Prova in scadenza: <strong>${hLeft} ore rimaste</strong>${buyLink}`
+    : `⏳ Prova gratuita: <strong>${dLeft} giorni rimasti</strong>${buyLink}`
+}
+
+// Banner per visitatore non ancora registrato: NON blocca la piattaforma,
+// invita a iniziare la prova (apertura gate solo su click dell'utente).
+function showAnonBanner() {
   const banner = document.getElementById('trial-banner')
   if (!banner) return
   banner.style.display = 'block'
-  // Link acquisto: scrolla alla CTA card coi pulsanti di pagamento
-  const buyLink = ` · <a href="#" onclick="document.querySelector('.cta-paypal').scrollIntoView({behavior:'smooth'});return false" style="color:#856404;font-weight:700;text-decoration:underline">Attiva accesso annuale €69,00</a>`
-  if (hLeft < 24) {
-    banner.innerHTML = `⏳ Prova in scadenza: <strong>${hLeft} ore rimaste</strong>${buyLink}`
-  } else {
-    banner.innerHTML = `⏳ Prova gratuita: <strong>${dLeft} giorni rimasti</strong>${buyLink}`
+  banner.innerHTML = `⏳ <strong>3 giorni gratis</strong> — accedi con la tua email per iniziare la prova · `
+    + `<a href="#" onclick="showLoginGate();return false" style="color:#856404;font-weight:700;text-decoration:underline">Inizia ora</a>`
+}
+
+// Verifica stato trial via Edge Function (server-side)
+async function checkTrial(session) {
+  try {
+    const res = await fetch(`${SUPABASE_URL}/functions/v1/check-trial`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${session.access_token}`,
+        'apikey': SUPABASE_ANON,
+        'Content-Type': 'application/json'
+      }
+    })
+    const data = await res.json()
+    if (data.valid) {
+      hideGate()
+      if (!data.paid) showTrialBanner(data.seconds_left)
+    } else {
+      // Trial scaduto: blocco con paywall
+      showPaywall()
+    }
+  } catch (e) {
+    // In caso di errore rete la piattaforma resta visibile (demo)
+    showAnonBanner()
   }
 }
 
 // ── INIT TRIAL ──
-;(function initTrial() {
-  const state = getTrialState()
-  if (state.expired) {
-    // Trial scaduto: paywall — per continuare bisogna pagare
-    showPaywall()
+// La piattaforma è SEMPRE visibile all'apertura (come nel sito live).
+// Il login non blocca: chi è loggato vede il proprio stato trial,
+// chi non lo è vede il banner d'invito ma può comunque esplorare la demo.
+;(async function initTrial() {
+  hideGate() // piattaforma visibile da subito
+  const { data: { session } } = await sb.auth.getSession()
+  if (session) {
+    await checkTrial(session)
   } else {
-    // Primo accesso O trial attivo: avvia il trial in automatico
-    // così l'utente vede e prova SUBITO l'intera piattaforma.
-    if (!state.started) {
-      localStorage.setItem(TRIAL_KEY, Date.now().toString())
-    }
-    showTrialBanner()
+    showAnonBanner()
   }
+  sb.auth.onAuthStateChange(async (event, s) => {
+    if (event === 'SIGNED_IN' && s) await checkTrial(s)
+    if (event === 'SIGNED_OUT') { hideGate(); showAnonBanner() }
+  })
 })()
+
 
 // ── STICKY TOP ──
 let tipo='affitto', hasMutuo=true;
