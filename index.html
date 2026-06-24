@@ -3,6 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
+<!-- CSP: GH Pages non permette header HTTP custom → policy via meta. Allowlist dei soli domini usati.
+     'unsafe-inline' è necessario perché script/handler/style sono inline in questo file singolo. -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: https://www.paypalobjects.com; connect-src https://xpnpdkaaeudufupovsxm.supabase.co wss://xpnpdkaaeudufupovsxm.supabase.co; form-action https://www.paypal.com; base-uri 'self'; object-src 'none'">
 <title>Consulenza con RenditaLab — Calcola il rendimento del tuo immobile</title>
 <meta name="description" content="Calcola gratis il rendimento netto, cash flow e ROI del tuo immobile. Fiscalità italiana (cedolare secca, IRPEF), simulazione mutuo, proiezione 10 anni. Nessuna registrazione.">
 <link rel="canonical" href="https://lucaiolienrico.github.io/renditalabdemo/">
@@ -549,7 +552,7 @@ footer a{color:var(--green);text-decoration:none}
             <div class="chart-stat-v" id="st-cf">—</div>
           </div>
           <div>
-            <div class="chart-stat-l">Plusvalenza</div>
+            <div class="chart-stat-l">Apprezzamento</div>
             <div class="chart-stat-v" style="color:var(--gold)" id="st-plus">—</div>
           </div>
         </div>
@@ -632,9 +635,14 @@ footer a{color:var(--green);text-decoration:none}
 
 <script>
 // ── TRIAL SERVER-SIDE (Supabase) ──
-// Trial 3 giorni verificato SUL SERVER (progetto Supabase "consulenza").
-// Il timestamp di scadenza vive nella tabella `trials`, legato all'email.
-// Non aggirabile da DevTools, incognito o cambio dispositivo/browser.
+// La VALIDITA' del trial (timestamp scadenza in tabella `trials`, legato all'email)
+// e' verificata server-side via Edge Function: questo NON e' aggirabile cambiando
+// browser/incognito/dispositivo.
+// ATTENZIONE: il GATING DEI RISULTATI e' invece puramente cosmetico (CSS blur).
+// I valori sono calcolati client-side in update() e restano leggibili via DevTools
+// (textContent) o rimuovendo la classe .locked. Funziona come gate marketing/lead-gen,
+// NON come protezione del contenuto. Per enforcement reale: spostare il calcolo
+// nell'Edge Function e restituire i numeri solo se data.valid === true.
 
 const SUPABASE_URL  = 'https://xpnpdkaaeudufupovsxm.supabase.co'
 const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhwbnBka2FhZXVkdWZ1cG92c3htIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIyMDAxMDAsImV4cCI6MjA5Nzc3NjEwMH0.hz4axSF4e56x3-DhrBmQs-99uS0bPtrDg87lbvJQ0-4'
@@ -864,10 +872,15 @@ async function checkTrial(session) {
 ;(async function initTrial() {
   hideGate()
   setLocked(true) // di default i risultati partono bloccati
-  const { data: { session } } = await sb.auth.getSession()
-  if (session) {
-    await checkTrial(session)
-  } else {
+  try {
+    const { data: { session } } = await sb.auth.getSession()
+    if (session) {
+      await checkTrial(session)
+    } else {
+      applyVisibility('anon')
+    }
+  } catch (e) {
+    // getSession puo' rigettare (rete/SDK): degradiamo a stato anonimo invece di rompere l'app
     applyVisibility('anon')
   }
   sb.auth.onAuthStateChange(async (event, s) => {
@@ -1014,6 +1027,15 @@ function drawChart(data,pos){
   ).join('');
 }
 
+// ── COSTANTI MODELLO FINANZIARIO ──
+// Centralizzate: niente numeri magici sparsi nella logica di calcolo.
+const CEDOLARE_MAX   = 0.21   // soglia che distingue cedolare (base lorda) da IRPEF (base 95%)
+const IRPEF_FORFAIT  = 0.95   // deduzione forfettaria 5% sul canone in regime IRPEF
+const AIRBNB_NET     = 0.68   // canone netto da commissioni piattaforma + gestione (~32% trattenuto)
+const FLIP_TAX       = 0.26   // imposta sostitutiva su plusvalenza immobiliare (rivendita <5 anni)
+const GROWTH_CANONE  = 0.015  // crescita canone /anno (proiezione)
+const GROWTH_SPESE   = 0.02   // crescita spese /anno (proiezione)
+
 // ── UPDATE PRINCIPALE ──
 function update(){
   const prezzo=sv('prezzo'), canone=sv('canone'), spese=sv('spese');
@@ -1053,10 +1075,14 @@ function update(){
     const prezzoVendita=canone;
     const costiTotali=spese;
     const plusvalenzaLorda=prezzoVendita-prezzoAcquisto;
-    const tassaFlip=0.26;
-    const imposteFLip=Math.max(0,plusvalenzaLorda)*tassaFlip;
-    const profittoNetto=plusvalenzaLorda-costiTotali-imposteFLip;
-    const roiFlip=prezzoAcquisto>0?(profittoNetto/prezzoAcquisto)*100:0;
+    // Base imponibile = corrispettivo − (prezzo acquisto + costi inerenti/incrementativi).
+    // I costi di ristrutturazione/notaio/agenzia riducono la plusvalenza tassabile (TUIR art. 68).
+    const baseImponibile=Math.max(0,prezzoVendita-prezzoAcquisto-costiTotali);
+    const imposteFlip=baseImponibile*FLIP_TAX;
+    const profittoNetto=plusvalenzaLorda-costiTotali-imposteFlip;
+    // ROI su capitale totale investito (acquisto + tutti i costi accessori), non solo sul prezzo.
+    const capitaleInvestito=prezzoAcquisto+costiTotali;
+    const roiFlip=capitaleInvestito>0?(profittoNetto/capitaleInvestito)*100:0;
     const pos=profittoNetto>=0;
 
     const card=document.getElementById('cf-card');
@@ -1086,10 +1112,11 @@ function update(){
   // ── AFFITTO / AIRBNB ──
   const occ=isAir?sv('occ'):100;
   const canoneAnnuo=isAir
-    ?(canone*365*(occ/100)*0.68)
+    ?(canone*365*(occ/100)*AIRBNB_NET)
     :(canone*12*(occ/100));
   const speseAnnue=spese*12;
-  const imponibile=aliquota<=0.21?canoneAnnuo:canoneAnnuo*0.95;
+  // Cedolare (≤21%): base = canone lordo. IRPEF (>21%): base = 95% canone (5% forfait spese).
+  const imponibile=aliquota<=CEDOLARE_MAX?canoneAnnuo:canoneAnnuo*IRPEF_FORFAIT;
   const imposte=imponibile*aliquota;
   const redditoNetto=canoneAnnuo-speseAnnue-imposte;
 
@@ -1112,7 +1139,10 @@ function update(){
 
   const rLordo=prezzo>0?(canoneAnnuo/prezzo)*100:0;
   const rNetto=prezzo>0?(redditoNetto/prezzo)*100:0;
-  const capRate=prezzo>0?(redditoNetto/prezzo)*100:0;
+  // Cap Rate = NOI / prezzo. NOI = reddito operativo netto: esclude imposte sul reddito e debito.
+  // Prima era identico a rNetto (= dopo imposte) → metrica duplicata e incoerente con la label "NOI / prezzo".
+  const noi=canoneAnnuo-speseAnnue;
+  const capRate=prezzo>0?(noi/prezzo)*100:0;
   const coc=capitale>0?(cfAnnuo/capitale)*100:0;
 
   const card=document.getElementById('cf-card');
@@ -1141,9 +1171,9 @@ function update(){
 
   const proj=Array.from({length:11},(_,i)=>{
     if(!i)return{anno:0,cf:0,valore:prezzo};
-    const ca=canoneAnnuo*Math.pow(1.015,i);
-    const sa=speseAnnue*Math.pow(1.02,i);
-    const imp=(aliquota<=0.21?ca:ca*0.95)*aliquota;
+    const ca=canoneAnnuo*Math.pow(1+GROWTH_CANONE,i);
+    const sa=speseAnnue*Math.pow(1+GROWTH_SPESE,i);
+    const imp=(aliquota<=CEDOLARE_MAX?ca:ca*IRPEF_FORFAIT)*aliquota;
     return{anno:i,cf:(ca-sa-imp)-rataAnnua,valore:prezzo*Math.pow(1+riv/100,i)};
   });
   const cfCum=proj.slice(1).reduce((a,d)=>a+d.cf,0);
@@ -1475,7 +1505,7 @@ function generatePDF() {
       doc.roundedRect(M + halfW + 4, y, halfW, boxH, 2, 2, 'F')
       doc.setFontSize(6.5)
       doc.setTextColor(...INK3)
-      doc.text('PLUSVALENZA STIMATA', M + halfW + 7, y + 5.5)
+      doc.text('APPREZZAMENTO IMMOBILE', M + halfW + 7, y + 5.5)
       doc.setFontSize(12)
       doc.setTextColor(...GOLD)
       doc.text(plusEl, M + halfW + 7, y + 13)
