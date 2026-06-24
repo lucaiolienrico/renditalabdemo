@@ -2,7 +2,7 @@
 
 Demo pubblica del calcolatore ROI immobiliare Rendimax.
 
-🔗 **Live**: https://lucaiolienrico.github.io/renditalabdemo/
+🔗 **Live**:https://renditalabdemo.vercel.app/
 
 ## Deploy
 
