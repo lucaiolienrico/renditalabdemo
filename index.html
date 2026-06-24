@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <!-- CSP: GH Pages non permette header HTTP custom → policy via meta. Allowlist dei soli domini usati.
      'unsafe-inline' è necessario perché script/handler/style sono inline in questo file singolo. -->
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: https://www.paypalobjects.com; connect-src https://xpnpdkaaeudufupovsxm.supabase.co wss://xpnpdkaaeudufupovsxm.supabase.co; form-action https://www.paypal.com; base-uri 'self'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://www.paypal.com https://*.paypal.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: https://www.paypalobjects.com https://*.paypal.com; connect-src https://xpnpdkaaeudufupovsxm.supabase.co wss://xpnpdkaaeudufupovsxm.supabase.co https://www.paypal.com https://*.paypal.com; frame-src https://www.paypal.com https://*.paypal.com; form-action https://www.paypal.com; base-uri 'self'; object-src 'none'">
 <title>Consulenza con RenditaLab — Calcola il rendimento del tuo immobile</title>
 <meta name="description" content="Calcola gratis il rendimento netto, cash flow e ROI del tuo immobile. Fiscalità italiana (cedolare secca, IRPEF), simulazione mutuo, proiezione 10 anni. Nessuna registrazione.">
 <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1">
@@ -353,14 +353,14 @@ footer{background:#fff;border-top:1px solid var(--ink4);padding:28px 24px;text-a
 footer p{font-size:.7rem;color:var(--ink3)}
 footer a{color:var(--green);text-decoration:none}
 
-/* PayPal override per adattarsi al tema */
-.pp-K4EWF28UMTLB4{
-  text-align:center;border:none;border-radius:0.25rem;
-  min-width:11.625rem;padding:0 2rem;height:2.625rem;
-  font-weight:bold;background-color:#FFD140;color:#000000;
-  font-family:"Helvetica Neue",Arial,sans-serif;
-  font-size:1rem;line-height:1.25rem;cursor:pointer;
-}
+/* PayPal Smart Buttons — stati ausiliari */
+.pp-mount{width:100%;min-height:46px;display:flex;flex-direction:column;align-items:stretch;gap:8px}
+.pp-loading{font-size:.72rem;color:var(--ink3);text-align:center;padding:10px}
+.pp-err{font-size:.72rem;color:var(--red);text-align:center}
+.pp-need-login{width:100%;background:var(--green);color:#fff;border:none;border-radius:10px;padding:12px;font-size:.82rem;font-weight:600;cursor:pointer;font-family:var(--sans)}
+.pp-recheck{width:100%;background:transparent;border:1px solid var(--ink4);color:var(--ink2);border-radius:10px;padding:9px;font-size:.74rem;font-weight:600;cursor:pointer;font-family:var(--sans);margin-top:8px}
+.pp-recheck:hover{border-color:var(--ink2);color:var(--ink)}
+.pp-recheck:disabled{opacity:.6;cursor:wait}
 
 @media(max-width:520px){
   .hero{padding:44px 16px 36px}
@@ -630,13 +630,9 @@ footer a{color:var(--green);text-decoration:none}
       </div>
       <div class="cta-paypal">
         <div class="cta-paypal-label">Accesso annuale · €49,00</div>
-        <div>
-          <style>.pp-K4EWF28UMTLB4{text-align:center;border:none;border-radius:0.25rem;min-width:11.625rem;padding:0 2rem;height:2.625rem;font-weight:bold;background-color:#FFD140;color:#000000;font-family:"Helvetica Neue",Arial,sans-serif;font-size:1rem;line-height:1.25rem;cursor:pointer;}</style>
-          <form action="https://www.paypal.com/ncp/payment/K4EWF28UMTLB4" method="post" target="_blank" rel="noopener noreferrer" style="display:inline-grid;justify-items:center;align-content:start;gap:0.5rem;">
-            <input class="pp-K4EWF28UMTLB4" type="submit" value="Acquista ora" />
-            <img src="https://www.paypalobjects.com/images/Debit_Credit_APM.svg" alt="cards" />
-            <section style="font-size:0.75rem;">Con tecnologia <img src="https://www.paypalobjects.com/paypal-ui/logos/svg/paypal-wordmark-color.svg" alt="paypal" style="height:0.875rem;vertical-align:middle;"/></section>
-          </form>
+        <div style="width:100%;max-width:280px">
+          <div class="pp-mount" id="pp-cta"></div>
+          <button class="pp-recheck" onclick="recheckPaid(this)">Ho pagato → ricontrolla</button>
         </div>
       </div>
       <div class="report-preview" id="rp-wrap">
@@ -701,15 +697,94 @@ const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFz
 
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON)
 
-// PayPal (accesso annuale €49,00)
+// ── PAYPAL (Orders API + Smart Buttons) ──
+// Client ID PUBBLICO (non segreto): sostituire col Client ID LIVE dell'app PayPal.
+const PAYPAL_CLIENT_ID = 'INSERISCI_PAYPAL_CLIENT_ID_LIVE'
+const FN = SUPABASE_URL + '/functions/v1'
+
+let _ppSdk = null
+function loadPayPalSDK() {
+  if (_ppSdk) return _ppSdk
+  _ppSdk = new Promise((resolve, reject) => {
+    if (window.paypal) return resolve(window.paypal)
+    if (!PAYPAL_CLIENT_ID || PAYPAL_CLIENT_ID.indexOf('INSERISCI') === 0) {
+      reject(new Error('paypal_client_id_missing')); return
+    }
+    const s = document.createElement('script')
+    s.src = 'https://www.paypal.com/sdk/js?client-id=' + encodeURIComponent(PAYPAL_CLIENT_ID) + '&currency=EUR&intent=capture'
+    s.onload = () => resolve(window.paypal)
+    s.onerror = () => reject(new Error('paypal_sdk_load_failed'))
+    document.head.appendChild(s)
+  })
+  return _ppSdk
+}
+
+// Monta gli Smart Buttons nel container. Richiede sessione (serve user_id per il custom_id).
+async function mountPayPal(container) {
+  if (!container) return
+  const { data: { session } } = await sb.auth.getSession()
+  if (!session) {
+    container.innerHTML = '<button class="pp-need-login" onclick="openAuthGate()">Registrati gratis per attivare l\'accesso</button>'
+    return
+  }
+  container.innerHTML = '<div class="pp-loading">Caricamento PayPal…</div>'
+  let paypal
+  try { paypal = await loadPayPalSDK() }
+  catch (e) { container.innerHTML = '<p class="pp-err">PayPal non disponibile al momento.</p>'; return }
+  container.innerHTML = ''
+  try {
+    await paypal.Buttons({
+      style: { layout: 'vertical', color: 'gold', shape: 'rect', label: 'pay', height: 42 },
+      // Ordine creato lato server: importo e custom_id non sono manomettibili dal client.
+      createOrder: async () => {
+        const { data: { session: s } } = await sb.auth.getSession()
+        const r = await fetch(FN + '/paypal-create-order', {
+          method: 'POST',
+          headers: { 'Authorization': 'Bearer ' + s.access_token, 'apikey': SUPABASE_ANON, 'Content-Type': 'application/json' }
+        })
+        const d = await r.json()
+        if (!d.ok) throw new Error(d.reason || 'create_failed')
+        return d.id
+      },
+      // Cattura lato server con validazione importo + custom_id == utente.
+      onApprove: async (data) => {
+        const { data: { session: s } } = await sb.auth.getSession()
+        const r = await fetch(FN + '/paypal-capture-order', {
+          method: 'POST',
+          headers: { 'Authorization': 'Bearer ' + s.access_token, 'apikey': SUPABASE_ANON, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ orderID: data.orderID })
+        })
+        const d = await r.json()
+        if (d.ok && d.paid) {
+          applyVisibility('paid')
+          const gate = document.getElementById('trial-gate')
+          if (gate) { gate.classList.remove('visible'); gate.innerHTML = ''; unlockBody() }
+        } else {
+          alert('Pagamento ricevuto. Se l\'accesso non si sblocca subito, usa "Ho pagato → ricontrolla".')
+        }
+      },
+      onError: (err) => { console.error('PayPal error:', err) }
+    }).render(container)
+  } catch (e) {
+    container.innerHTML = '<p class="pp-err">Impossibile inizializzare PayPal.</p>'
+  }
+}
+
+// Ricontrolla lo stato pagamento (post-checkout) senza refresh manuale.
+async function recheckPaid(btn) {
+  if (btn) { btn.disabled = true; btn.textContent = 'Verifica…' }
+  try {
+    const { data: { session } } = await sb.auth.getSession()
+    if (session) await checkTrial(session)
+  } catch (e) { /* no-op */ }
+  if (btn) { btn.disabled = false; btn.textContent = 'Ho pagato → ricontrolla' }
+}
+
+// Blocco PayPal per gate/paywall: placeholder montato dopo l'inserimento nel DOM.
 function buildPayPalBlock() {
   return `
-    <style>.pp-K4EWF28UMTLB4{text-align:center;border:none;border-radius:0.25rem;min-width:11.625rem;padding:0 2rem;height:2.625rem;font-weight:bold;background-color:#FFD140;color:#000000;font-family:"Helvetica Neue",Arial,sans-serif;font-size:1rem;line-height:1.25rem;cursor:pointer;}</style>
-    <form action="https://www.paypal.com/ncp/payment/K4EWF28UMTLB4" method="post" target="_blank" rel="noopener noreferrer" style="display:inline-grid;justify-items:center;align-content:start;gap:0.5rem;">
-      <input class="pp-K4EWF28UMTLB4" type="submit" value="Acquista ora" />
-      <img src="https://www.paypalobjects.com/images/Debit_Credit_APM.svg" alt="cards" />
-      <section style="font-size:0.75rem;">Con tecnologia <img src="https://www.paypalobjects.com/paypal-ui/logos/svg/paypal-wordmark-color.svg" alt="paypal" style="height:0.875rem;vertical-align:middle;"/></section>
-    </form>`
+    <div class="pp-mount"></div>
+    <button class="pp-recheck" onclick="recheckPaid(this)">Ho pagato → ricontrolla</button>`
 }
 
 // Bonifico bancario — predisposto ma nascosto (display:none)
@@ -767,6 +842,7 @@ function showLoginGate(msg) {
   if (box) box.style.position = 'relative'
   gate.classList.add('visible')
   lockBody()
+  mountPayPal(gate.querySelector('.pp-mount'))
 }
 
 // Chiude il modal di registrazione: l'utente torna alla demo (risultati bloccati)
@@ -818,6 +894,7 @@ function showPaywall() {
     </div>`
   gate.classList.add('visible')
   lockBody()
+  mountPayPal(gate.querySelector('.pp-mount'))
 }
 
 function hideGate() {
@@ -939,9 +1016,11 @@ async function checkTrial(session) {
     // getSession puo' rigettare (rete/SDK): degradiamo a stato anonimo invece di rompere l'app
     applyVisibility('anon')
   }
+  mountPayPal(document.getElementById('pp-cta')) // CTA sempre presente in pagina
   sb.auth.onAuthStateChange(async (event, s) => {
     if (event === 'SIGNED_IN' && s) await checkTrial(s)
     if (event === 'SIGNED_OUT') applyVisibility('anon')
+    mountPayPal(document.getElementById('pp-cta')) // ri-monta: alterna "registrati" ↔ bottoni
   })
 })()
 
