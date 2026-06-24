@@ -8,17 +8,69 @@
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: https://www.paypalobjects.com; connect-src https://xpnpdkaaeudufupovsxm.supabase.co wss://xpnpdkaaeudufupovsxm.supabase.co; form-action https://www.paypal.com; base-uri 'self'; object-src 'none'">
 <title>Consulenza con RenditaLab — Calcola il rendimento del tuo immobile</title>
 <meta name="description" content="Calcola gratis il rendimento netto, cash flow e ROI del tuo immobile. Fiscalità italiana (cedolare secca, IRPEF), simulazione mutuo, proiezione 10 anni. Nessuna registrazione.">
+<meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1">
+<meta name="theme-color" content="#00875a">
 <link rel="canonical" href="https://lucaiolienrico.github.io/renditalabdemo/">
 <meta property="og:type" content="website">
+<meta property="og:site_name" content="RenditaLab">
 <meta property="og:url" content="https://lucaiolienrico.github.io/renditalabdemo/">
 <meta property="og:title" content="Consulenza con RenditaLab — Calcola il rendimento del tuo immobile">
 <meta property="og:description" content="Cash flow, rendimento netto e proiezione 10 anni in 2 minuti. Gratis, senza registrazione. Fiscalità italiana.">
 <meta property="og:locale" content="it_IT">
+<meta property="og:image" content="https://lucaiolienrico.github.io/renditalabdemo/og-image.png">
+<meta property="og:image:secure_url" content="https://lucaiolienrico.github.io/renditalabdemo/og-image.png">
+<meta property="og:image:type" content="image/png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Consulenza con RenditaLab — calcolo rendimento immobiliare: cash flow, ROI, proiezione 10 anni">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Consulenza con RenditaLab — Calcola il rendimento del tuo immobile">
 <meta name="twitter:description" content="Cash flow, rendimento netto e proiezione 10 anni in 2 minuti. Nessuna registrazione.">
+<meta name="twitter:image" content="https://lucaiolienrico.github.io/renditalabdemo/og-image.png">
+<meta name="twitter:image:alt" content="Calcolo rendimento immobiliare con RenditaLab">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,700;0,9..144,900;1,9..144,700&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<!-- Structured data: SoftwareApplication + Organization (GEO/entity authority) -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "SoftwareApplication",
+      "name": "Consulenza con RenditaLab",
+      "applicationCategory": "FinanceApplication",
+      "operatingSystem": "Web",
+      "url": "https://lucaiolienrico.github.io/renditalabdemo/",
+      "inLanguage": "it-IT",
+      "description": "Calcolatore di rendimento immobiliare per il mercato italiano: cash flow, rendimento netto, ROI, Cap Rate, simulazione mutuo e proiezione a 10 anni con fiscalità italiana (cedolare secca e IRPEF).",
+      "featureList": [
+        "Cash flow mensile e annuo",
+        "Rendimento netto e lordo",
+        "Cap Rate e Cash on Cash",
+        "Cedolare secca 21% e 10%, IRPEF",
+        "Simulazione mutuo",
+        "Proiezione a 10 anni",
+        "Report PDF"
+      ],
+      "offers": {
+        "@type": "Offer",
+        "price": "49.00",
+        "priceCurrency": "EUR",
+        "description": "Accesso annuale completo. 3 giorni di prova gratuita, nessuna carta richiesta."
+      },
+      "publisher": { "@id": "https://renditalab.it/#organization" }
+    },
+    {
+      "@type": "Organization",
+      "@id": "https://renditalab.it/#organization",
+      "name": "RenditaLab",
+      "url": "https://renditalab.it",
+      "description": "Piattaforma italiana di analisi del rendimento immobiliare per agenzie, investitori e property manager.",
+      "sameAs": ["https://renditalab.it"]
+    }
+  ]
+}
+</script>
 <!-- jsPDF + autoTable: generazione PDF client-side, zero server -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
@@ -726,18 +778,22 @@ function closeAuthGate() {
 }
 
 async function sendMagicLink() {
-  const email = (document.getElementById('gate-email')||{}).value
+  const raw = (document.getElementById('gate-email')||{}).value || ''
+  const email = raw.trim()
   const msg = document.getElementById('gate-msg')
   const btn = document.getElementById('gate-send')
-  if (!email || !email.includes('@')) { if(msg) msg.textContent='Inserisci un indirizzo email valido.'; return }
+  // Validazione: niente spazi, una sola @, dominio con TLD. include('@') accettava 'a@', '@', ecc.
+  const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+  if (!EMAIL_RE.test(email)) { if(msg) msg.textContent='Inserisci un indirizzo email valido.'; return }
   if (btn) { btn.disabled = true; btn.textContent = 'Invio in corso...' }
   const { error } = await sb.auth.signInWithOtp({
-    email,
+    email, // valore già trimmato: evita OTP inviato a indirizzo con spazi
     options: { emailRedirectTo: window.location.href.split('#')[0] }
   })
   if (error) {
     if(msg) msg.textContent = 'Errore: ' + error.message
-    if (btn) { btn.disabled = false; btn.textContent = 'Inizia i 3 giorni gratis →' }
+    // Label ripristinata identica a quella iniziale del bottone (no drift di copy)
+    if (btn) { btn.disabled = false; btn.textContent = 'Sblocca gratis i risultati →' }
   } else {
     if(msg) msg.innerHTML = '✅ Link inviato! Controlla la tua email (anche nello spam) e clicca per accedere.'
     if (btn) btn.style.display = 'none'
