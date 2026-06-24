@@ -1,0 +1,1719 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<!-- CSP via meta come fallback; gli header HTTP reali sono in vercel.json (host: Vercel).
+     'unsafe-inline' necessario perché script/handler/style sono inline in questo file singolo. -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://www.paypal.com https://*.paypal.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: https://www.paypalobjects.com https://*.paypal.com; connect-src https://xpnpdkaaeudufupovsxm.supabase.co wss://xpnpdkaaeudufupovsxm.supabase.co https://www.paypal.com https://*.paypal.com; frame-src https://www.paypal.com https://*.paypal.com; form-action https://www.paypal.com; base-uri 'self'; object-src 'none'">
+<title>Consulenza con RenditaLab — Calcola il rendimento del tuo immobile</title>
+<meta name="description" content="Calcola gratis il rendimento netto, cash flow e ROI del tuo immobile. Fiscalità italiana (cedolare secca, IRPEF), simulazione mutuo, proiezione 10 anni. Nessuna registrazione.">
+<meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1">
+<meta name="theme-color" content="#00875a">
+<link rel="canonical" href="https://renditalabdemo.vercel.app/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="RenditaLab">
+<meta property="og:url" content="https://renditalabdemo.vercel.app/">
+<meta property="og:title" content="Consulenza con RenditaLab — Calcola il rendimento del tuo immobile">
+<meta property="og:description" content="Cash flow, rendimento netto e proiezione 10 anni in 2 minuti. Gratis, senza registrazione. Fiscalità italiana.">
+<meta property="og:locale" content="it_IT">
+<meta property="og:image" content="https://renditalabdemo.vercel.app/og-image.png">
+<meta property="og:image:secure_url" content="https://renditalabdemo.vercel.app/og-image.png">
+<meta property="og:image:type" content="image/png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Consulenza con RenditaLab — calcolo rendimento immobiliare: cash flow, ROI, proiezione 10 anni">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Consulenza con RenditaLab — Calcola il rendimento del tuo immobile">
+<meta name="twitter:description" content="Cash flow, rendimento netto e proiezione 10 anni in 2 minuti. Nessuna registrazione.">
+<meta name="twitter:image" content="https://renditalabdemo.vercel.app/og-image.png">
+<meta name="twitter:image:alt" content="Calcolo rendimento immobiliare con RenditaLab">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,700;0,9..144,900;1,9..144,700&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<!-- Structured data: SoftwareApplication + Organization (GEO/entity authority) -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "SoftwareApplication",
+      "name": "Consulenza con RenditaLab",
+      "applicationCategory": "FinanceApplication",
+      "operatingSystem": "Web",
+      "url": "https://renditalabdemo.vercel.app/",
+      "inLanguage": "it-IT",
+      "description": "Calcolatore di rendimento immobiliare per il mercato italiano: cash flow, rendimento netto, ROI, Cap Rate, simulazione mutuo e proiezione a 10 anni con fiscalità italiana (cedolare secca e IRPEF).",
+      "featureList": [
+        "Cash flow mensile e annuo",
+        "Rendimento netto e lordo",
+        "Cap Rate e Cash on Cash",
+        "Cedolare secca 21% e 10%, IRPEF",
+        "Simulazione mutuo",
+        "Proiezione a 10 anni",
+        "Report PDF"
+      ],
+      "offers": {
+        "@type": "Offer",
+        "price": "49.00",
+        "priceCurrency": "EUR",
+        "description": "Accesso annuale completo. 3 giorni di prova gratuita, nessuna carta richiesta."
+      },
+      "publisher": { "@id": "https://renditalab.it/#organization" }
+    },
+    {
+      "@type": "Organization",
+      "@id": "https://renditalab.it/#organization",
+      "name": "RenditaLab",
+      "url": "https://renditalab.it",
+      "description": "Piattaforma italiana di analisi del rendimento immobiliare per agenzie, investitori e property manager.",
+      "sameAs": ["https://renditalab.it"]
+    }
+  ]
+}
+</script>
+<!-- jsPDF + autoTable: generazione PDF client-side, zero server -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+<!-- Supabase SDK: trial server-side -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --ink:#0d1117;--ink2:#3d4451;--ink3:#8892a4;--ink4:#c5ccd8;--ink5:#e8edf3;
+  --bg:#f5f6f8;--bg2:#ffffff;--bg3:#eef0f4;
+  --green:#00875a;--green2:#00a36c;--green3:#e6f7f1;
+  --red:#d92b3a;--red3:#fdf0f1;
+  --gold:#c47b00;--gold3:#fdf6e6;
+  --blue:#1a6bbf;
+  --shadow-sm:0 1px 3px rgba(13,17,23,.06),0 2px 8px rgba(13,17,23,.05);
+  --shadow:0 1px 3px rgba(13,17,23,.06),0 4px 16px rgba(13,17,23,.08);
+  --shadow-lg:0 8px 32px rgba(13,17,23,.12),0 2px 8px rgba(13,17,23,.06);
+  --shadow-xl:0 20px 60px rgba(13,17,23,.15),0 4px 16px rgba(13,17,23,.08);
+  --r:10px;--rl:16px;--rxl:20px;
+  --sans:'DM Sans',sans-serif;
+  --display:'Fraunces',serif;
+}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--ink);font-family:var(--sans);min-height:100vh;overflow-x:hidden;-webkit-font-smoothing:antialiased;line-height:1.5}
+
+/* ── TRIAL GATE ── */
+#trial-gate{
+  display:none;position:fixed;inset:0;
+  background:rgba(245,246,248,.92);
+  backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+  z-index:9999;
+  align-items:flex-start;justify-content:center;
+  overflow-y:auto;-webkit-overflow-scrolling:touch;
+  padding:24px 16px;
+}
+#trial-gate.visible{display:flex}
+.gate-box{
+  background:#fff;border-radius:24px;padding:36px 28px;
+  max-width:400px;width:100%;
+  margin:auto;
+  box-shadow:0 24px 64px rgba(13,17,23,.16),0 4px 16px rgba(13,17,23,.08);
+  text-align:center;
+}
+.gate-icon{
+  width:52px;height:52px;border-radius:14px;
+  background:var(--green3);
+  display:flex;align-items:center;justify-content:center;
+  margin:0 auto 20px;
+}
+.gate-title{font-family:var(--display);font-size:1.7rem;font-weight:900;color:var(--ink);letter-spacing:-.03em;margin-bottom:8px}
+.gate-sub{font-size:.83rem;color:var(--ink2);line-height:1.55;margin-bottom:26px}
+.gate-features{display:flex;flex-direction:column;gap:7px;margin-bottom:28px;text-align:left}
+.gate-feat{display:flex;align-items:center;gap:9px;font-size:.76rem;color:var(--ink2)}
+.gate-feat span{width:18px;height:18px;border-radius:50%;background:var(--green3);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:.6rem;color:var(--green)}
+/* PayPal button wrapper */
+.gate-paypal{display:flex;flex-direction:column;align-items:center;gap:10px}
+.gate-note{font-size:.65rem;color:var(--ink3);margin-top:4px}
+
+/* Paywall (trial scaduto) */
+.paywall-box{
+  background:#fff;border-radius:24px;padding:36px 28px;
+  max-width:420px;width:100%;
+  margin:auto;
+  box-shadow:0 24px 64px rgba(13,17,23,.16);
+  text-align:center;
+}
+.paywall-badge{
+  display:inline-block;background:var(--red3);color:var(--red);
+  font-size:.62rem;font-weight:700;letter-spacing:.06em;
+  padding:4px 12px;border-radius:20px;margin-bottom:18px;
+}
+.paywall-title{font-family:var(--display);font-size:1.7rem;font-weight:900;color:var(--ink);letter-spacing:-.03em;margin-bottom:10px}
+.paywall-sub{font-size:.83rem;color:var(--ink2);line-height:1.55;margin-bottom:28px}
+.paywall-paypal{display:flex;flex-direction:column;align-items:center;gap:10px}
+/* .paywall-reset rimosso: il link di reset pubblico è stato eliminato per sicurezza */
+
+/* ── PROMO STRIP ── */
+.promo{background:var(--green);padding:10px 48px 10px 24px;text-align:center;position:relative;flex-shrink:0}
+.promo p{font-size:.78rem;color:#fff;font-weight:500;line-height:1.4}
+.promo strong{font-weight:700}
+.promo-close{position:absolute;right:12px;top:50%;transform:translateY(-50%);background:rgba(255,255,255,.2);border:none;color:#fff;border-radius:50%;width:26px;height:26px;cursor:pointer;font-size:.9rem;display:flex;align-items:center;justify-content:center;line-height:1;font-family:var(--sans);flex-shrink:0}
+.promo-close:hover{background:rgba(255,255,255,.35)}
+
+/* ── STICKY SHELL ── */
+.sticky-shell{position:sticky;top:0;z-index:200}
+
+/* ── HEADER ── */
+header{
+  background:rgba(245,246,248,.95);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
+  border-bottom:1px solid var(--ink4);
+  padding:0 24px;height:60px;
+  display:flex;align-items:center;justify-content:space-between;
+  gap:12px;
+}
+.logo{display:flex;align-items:center;gap:10px;text-decoration:none;flex-shrink:0}
+.logo-mark{width:30px;height:30px;background:var(--green);border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.logo-mark svg{width:17px;height:17px}
+.logo-name{font-family:var(--display);font-size:1.1rem;font-weight:700;color:var(--ink);letter-spacing:-.02em}
+.logo-tag{background:var(--green3);color:var(--green);font-size:.6rem;font-weight:700;padding:3px 8px;border-radius:20px;letter-spacing:.04em;white-space:nowrap}
+.header-right{display:flex;align-items:center;gap:8px;flex-shrink:0}
+.btn-ghost{background:transparent;border:1px solid var(--ink4);color:var(--ink2);border-radius:var(--r);padding:7px 14px;font-size:.76rem;font-weight:500;cursor:pointer;font-family:var(--sans);transition:all .15s;white-space:nowrap}
+.btn-ghost:hover{border-color:var(--ink2);color:var(--ink)}
+.btn-primary{background:var(--green);color:#fff;border:none;border-radius:var(--r);padding:8px 18px;font-size:.76rem;font-weight:600;cursor:pointer;font-family:var(--sans);transition:all .2s;box-shadow:0 2px 8px rgba(0,135,90,.28);white-space:nowrap}
+.btn-primary:hover{background:var(--green2);transform:translateY(-1px);box-shadow:0 4px 16px rgba(0,135,90,.38)}
+@media(max-width:480px){.btn-ghost{display:none}}
+
+/* ── TRIAL BANNER (ore rimaste) ── */
+#trial-banner{display:none;background:#fff3cd;border-bottom:1px solid #ffc107;padding:8px 20px;text-align:center;font-size:.75rem;color:#856404;font-weight:500}
+#trial-banner strong{font-weight:700}
+
+/* ── TABS ── */
+.tipo-wrap{background:#fff;border-bottom:1px solid var(--ink4);padding:0 20px;display:flex;gap:0;overflow-x:auto;scrollbar-width:none}
+.tipo-wrap::-webkit-scrollbar{display:none}
+.tipo-tab{padding:14px 18px;font-size:.8rem;font-weight:500;color:var(--ink3);cursor:pointer;border-bottom:2px solid transparent;transition:all .15s;white-space:nowrap;background:none;border-left:none;border-right:none;border-top:none;font-family:var(--sans);flex-shrink:0}
+.tipo-tab.active{color:var(--green);border-bottom-color:var(--green);font-weight:600}
+.tipo-tab:hover:not(.active){color:var(--ink2)}
+
+/* ── HERO ── */
+.hero{
+  text-align:center;padding:60px 20px 48px;
+  background:linear-gradient(180deg,#fff 0%,var(--bg) 100%);
+  border-bottom:1px solid var(--ink4);
+  position:relative;overflow:hidden;
+}
+.hero::before{content:'';position:absolute;top:-100px;left:50%;transform:translateX(-50%);width:500px;height:500px;border-radius:50%;background:radial-gradient(circle,rgba(0,135,90,.07) 0%,transparent 70%);pointer-events:none}
+.hero-eyebrow{display:inline-flex;align-items:center;gap:6px;background:var(--green3);border:1px solid rgba(0,135,90,.2);border-radius:20px;padding:5px 14px;font-size:.68rem;font-weight:600;color:var(--green);margin-bottom:20px;letter-spacing:.04em;animation:fadeUp .5s ease both}
+.hero-eyebrow::before{content:'';width:6px;height:6px;border-radius:50%;background:var(--green);animation:blink 2s infinite;flex-shrink:0}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+.hero h1{font-family:var(--display);font-size:clamp(2.2rem,5vw,3.4rem);font-weight:900;line-height:1.1;color:var(--ink);letter-spacing:-.03em;margin-bottom:16px;animation:fadeUp .5s ease .08s both}
+.hero h1 em{font-style:italic;color:var(--green)}
+.hero-sub{font-size:.95rem;color:var(--ink2);max-width:440px;margin:0 auto 28px;font-weight:400;line-height:1.6;animation:fadeUp .5s ease .16s both}
+.hero-badges{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;animation:fadeUp .5s ease .22s both}
+.hero-badge{display:flex;align-items:center;gap:4px;background:#fff;border:1px solid var(--ink4);border-radius:20px;padding:4px 11px;font-size:.7rem;font-weight:500;color:var(--ink2)}
+@keyframes fadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+
+/* ── MAIN ── */
+.main{max-width:1020px;margin:0 auto;padding:32px 20px 80px;display:grid;grid-template-columns:360px 1fr;gap:20px;align-items:start}
+@media(max-width:760px){.main{grid-template-columns:1fr;padding:20px 14px 60px}}
+
+/* ── INPUT PANEL ── */
+.input-panel{background:#fff;border:1px solid var(--ink4);border-radius:var(--rxl);box-shadow:var(--shadow);position:sticky;top:var(--panel-top,120px);animation:fadeUp .4s ease .1s both;overflow:hidden}
+.input-header{padding:20px 22px 16px;border-bottom:1px solid var(--bg3)}
+.input-title{font-size:.65rem;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.09em;margin-bottom:3px}
+.input-desc{font-size:.82rem;color:var(--ink);font-weight:500}
+.input-body{padding:18px 22px 22px}
+
+/* ── FIELDS ── */
+.field{margin-bottom:18px}
+.field-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:9px;gap:8px}
+.field-label{font-size:.7rem;font-weight:500;color:var(--ink2);flex:1}
+.field-val{font-size:.84rem;font-weight:700;color:var(--ink);background:var(--bg3);border-radius:6px;padding:3px 8px;font-variant-numeric:tabular-nums;white-space:nowrap;max-width:120px;overflow:hidden;text-overflow:ellipsis}
+.track{position:relative;height:5px;background:var(--bg3);border-radius:3px;cursor:pointer;margin-bottom:0}
+.track-fill{position:absolute;left:0;top:0;height:100%;border-radius:3px;transition:width .05s}
+.track-thumb{position:absolute;top:50%;transform:translate(-50%,-50%);width:16px;height:16px;border-radius:50%;background:#fff;border:2.5px solid var(--green);box-shadow:0 0 0 3px rgba(0,135,90,.12);transition:left .05s;pointer-events:none}
+input[type=range]{position:absolute;inset:-10px 0;opacity:0;cursor:pointer;width:100%;height:32px;margin:0}
+.divider{height:1px;background:var(--bg3);margin:6px -22px 18px;width:calc(100% + 44px)}
+.sel-label{font-size:.7rem;font-weight:500;color:var(--ink2);margin-bottom:7px;display:block}
+select{width:100%;background:#fff;border:1.5px solid var(--ink4);color:var(--ink);border-radius:var(--r);padding:9px 32px 9px 11px;font-size:.78rem;font-family:var(--sans);cursor:pointer;appearance:none;outline:none;transition:border-color .15s;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M2 4l4 4 4-4' stroke='%238892a4' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 11px center}
+select:focus{border-color:var(--green);outline:none}
+.toggle-row{display:flex;align-items:center;justify-content:space-between;padding:10px 0;gap:8px}
+.toggle-label{font-size:.78rem;font-weight:500;color:var(--ink)}
+.toggle-pill{width:42px;height:24px;border-radius:12px;border:none;cursor:pointer;position:relative;transition:background .2s;flex-shrink:0}
+.toggle-knob{position:absolute;top:3px;width:18px;height:18px;border-radius:50%;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.2);transition:left .2s;pointer-events:none}
+.field-note{font-size:.62rem;color:var(--ink3);margin-top:5px;font-style:italic}
+
+/* ── RESULTS ── */
+.results{display:flex;flex-direction:column;gap:16px;animation:fadeUp .4s ease .18s both}
+
+/* ── FREEMIUM LOCK ── */
+.lockable{position:relative}
+.lockable.locked > .lock-content{filter:blur(7px);opacity:.55;user-select:none;pointer-events:none;transition:filter .3s}
+.lock-overlay{
+  position:absolute;inset:0;z-index:20;
+  display:none;flex-direction:column;align-items:center;justify-content:center;gap:10px;
+  cursor:pointer;border-radius:var(--rxl);
+  background:rgba(255,255,255,.35);
+  -webkit-backdrop-filter:blur(1px);backdrop-filter:blur(1px);
+  text-align:center;padding:16px;
+}
+.lockable.locked > .lock-overlay{display:flex}
+.lock-badge{
+  display:inline-flex;align-items:center;gap:7px;
+  background:var(--ink);color:#fff;
+  padding:9px 18px;border-radius:var(--r);
+  font-size:.8rem;font-weight:600;font-family:var(--sans);
+  box-shadow:0 6px 20px rgba(13,17,23,.25);
+  transition:transform .15s,box-shadow .2s;
+}
+.lockable.locked > .lock-overlay:hover .lock-badge{transform:translateY(-2px);box-shadow:0 10px 28px rgba(13,17,23,.35)}
+.lock-badge svg{width:15px;height:15px;flex-shrink:0}
+.lock-hint{font-size:.7rem;color:var(--ink2);font-weight:600;max-width:250px;line-height:1.4;background:rgba(255,255,255,.85);padding:6px 12px;border-radius:8px}
+.free-pill{position:absolute;top:14px;right:14px;z-index:5;background:var(--green3);color:var(--green);font-size:.56rem;font-weight:700;padding:3px 9px;border-radius:20px;letter-spacing:.05em}
+
+/* CF CARD */
+.cf-card{background:#fff;border:1px solid var(--ink4);border-radius:var(--rxl);box-shadow:var(--shadow-lg);padding:28px 28px 24px;position:relative;overflow:hidden;transition:border-color .3s,background .3s}
+.cf-card.positive{border-color:rgba(0,135,90,.3);background:linear-gradient(135deg,#fff 55%,var(--green3))}
+.cf-card.negative{border-color:rgba(217,43,58,.25);background:linear-gradient(135deg,#fff 55%,var(--red3))}
+.cf-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;transition:background .3s}
+.cf-card.positive::before{background:linear-gradient(90deg,var(--green),var(--green2))}
+.cf-card.negative::before{background:linear-gradient(90deg,var(--red),#f87171)}
+.cf-eyebrow{font-size:.65rem;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.09em;margin-bottom:6px}
+.cf-number{font-family:var(--display);font-size:clamp(2.6rem,6vw,3.8rem);font-weight:900;line-height:1;letter-spacing:-.03em;transition:color .3s;margin-bottom:6px;word-break:break-word}
+.cf-card.positive .cf-number{color:var(--green)}
+.cf-card.negative .cf-number{color:var(--red)}
+.cf-desc{font-size:.78rem;transition:color .3s}
+.cf-desc.pos{color:var(--green);font-weight:500}
+.cf-desc.neg{color:var(--red);font-weight:500}
+.cf-tag{position:absolute;top:20px;right:20px;font-size:.6rem;font-weight:700;padding:4px 9px;border-radius:6px;letter-spacing:.05em}
+.cf-tag.pos{background:var(--green3);color:var(--green)}
+.cf-tag.neg{background:var(--red3);color:var(--red)}
+
+/* METRICS */
+.metrics{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.metric{background:#fff;border:1px solid var(--ink4);border-radius:var(--rl);padding:16px 18px;box-shadow:var(--shadow-sm);transition:transform .15s,border-color .2s}
+.metric:hover{transform:translateY(-2px)}
+.metric.hl{border-color:rgba(0,135,90,.3);background:var(--green3)}
+.metric.hl-gold{border-color:rgba(196,123,0,.25);background:var(--gold3)}
+.metric-label{font-size:.62rem;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.07em;margin-bottom:5px}
+.metric-val{font-family:var(--display);font-size:1.5rem;font-weight:700;color:var(--ink);letter-spacing:-.02em;line-height:1.1}
+.metric.hl .metric-val{color:var(--green)}
+.metric.hl-gold .metric-val{color:var(--gold)}
+.metric-sub{font-size:.62rem;color:var(--ink3);margin-top:2px}
+
+/* BREAKDOWN */
+.breakdown{background:#fff;border:1px solid var(--ink4);border-radius:var(--rl);padding:18px 20px;box-shadow:var(--shadow-sm)}
+.breakdown-title{font-size:.65rem;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.09em;margin-bottom:12px}
+.bd-row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--bg3)}
+.bd-row:last-child{border-bottom:none;padding-top:11px;margin-top:2px;border-top:2px solid var(--ink4)}
+.bd-key{font-size:.76rem;color:var(--ink2);flex:1;padding-right:8px}
+.bd-val{font-size:.8rem;font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap}
+.bd-row:last-child .bd-key{font-weight:600;color:var(--ink)}
+.income{color:var(--green)}.expense{color:var(--red)}.mutuo-v{color:var(--blue)}
+
+/* CHART */
+.chart-card{background:#fff;border:1px solid var(--ink4);border-radius:var(--rl);padding:20px;box-shadow:var(--shadow-sm)}
+.chart-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px;gap:12px;flex-wrap:wrap}
+.chart-title{font-size:.8rem;font-weight:600;color:var(--ink);margin-bottom:2px}
+.chart-sub{font-size:.68rem;color:var(--ink3)}
+.chart-stats{display:flex;gap:16px;flex-wrap:wrap}
+.chart-stat-l{font-size:.58rem;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.07em;margin-bottom:2px}
+.chart-stat-v{font-size:.88rem;font-weight:700;font-variant-numeric:tabular-nums}
+svg.linechart{width:100%;height:88px;display:block;overflow:visible}
+.chart-years{display:flex;justify-content:space-between;margin-top:6px;flex-wrap:wrap;gap:4px}
+.chart-year{font-size:.6rem;color:var(--ink3);text-align:center;min-width:40px}
+
+/* CTA */
+.cta-card{background:var(--ink);border-radius:var(--rxl);padding:36px 32px;text-align:center;position:relative;overflow:hidden;box-shadow:var(--shadow-xl)}
+.cta-card::before{content:'';position:absolute;top:-80px;left:50%;transform:translateX(-50%);width:360px;height:360px;border-radius:50%;background:radial-gradient(circle,rgba(0,163,108,.18) 0%,transparent 70%);pointer-events:none}
+.cta-eyebrow{font-size:.65rem;font-weight:700;color:rgba(255,255,255,.45);text-transform:uppercase;letter-spacing:.1em;margin-bottom:14px}
+.cta-card h2{font-family:var(--display);font-size:clamp(1.4rem,2.8vw,2rem);font-weight:700;color:#fff;line-height:1.2;margin-bottom:10px;letter-spacing:-.02em}
+.cta-card h2 em{font-style:italic;color:var(--green2)}
+.cta-card>p{font-size:.82rem;color:rgba(255,255,255,.45);margin-bottom:24px}
+.cta-btns{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-bottom:20px}
+.btn-cta-main{background:var(--green);color:#fff;border:none;border-radius:var(--r);padding:13px 28px;font-size:.84rem;font-weight:600;cursor:pointer;font-family:var(--sans);transition:all .2s;box-shadow:0 4px 20px rgba(0,163,108,.38);display:inline-flex;align-items:center;gap:7px}
+.btn-cta-main:hover{background:var(--green2);transform:translateY(-2px);box-shadow:0 8px 28px rgba(0,163,108,.48)}
+.btn-cta-sec{background:rgba(255,255,255,.08);color:#fff;border:1px solid rgba(255,255,255,.18);border-radius:var(--r);padding:13px 24px;font-size:.84rem;font-weight:600;cursor:pointer;font-family:var(--sans);transition:all .2s;display:inline-flex;align-items:center;gap:7px;-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px)}
+.btn-cta-sec:hover{background:rgba(255,255,255,.16);border-color:rgba(255,255,255,.35);transform:translateY(-2px)}
+.btn-cta-sec:disabled{opacity:.6;cursor:wait;transform:none}
+.btn-cta-sec svg{width:15px;height:15px;flex-shrink:0}
+.cta-paypal{display:flex;flex-direction:column;align-items:center;gap:8px}
+.cta-paypal-label{font-size:.65rem;color:rgba(255,255,255,.35);margin-bottom:4px;text-transform:uppercase;letter-spacing:.06em}
+.trust-row{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;margin-top:18px}
+.trust-item{font-size:.65rem;color:rgba(255,255,255,.3);display:flex;align-items:center;gap:4px}
+
+/* REPORT PREVIEW */
+.report-preview{display:none;margin-top:16px;border-radius:var(--rl);overflow:hidden;box-shadow:0 16px 48px rgba(0,0,0,.5);position:relative;max-width:400px;margin-left:auto;margin-right:auto;text-align:left}
+.rp-blur{position:absolute;bottom:0;left:0;right:0;height:50%;background:linear-gradient(transparent,rgba(13,17,23,.97));display:flex;flex-direction:column;align-items:center;justify-content:flex-end;padding:18px;z-index:2}
+.rp-blur p{font-size:.75rem;color:#fff;font-weight:600;margin-bottom:10px}
+.rp-blur button{background:var(--green);color:#fff;border:none;border-radius:var(--r);padding:8px 20px;font-size:.72rem;font-weight:600;cursor:pointer;font-family:var(--sans)}
+.rp-head{background:var(--ink);padding:14px 18px;display:flex;justify-content:space-between;align-items:center}
+.rp-body{background:#fff;padding:18px}
+.rp-kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-bottom:12px}
+.rp-kpi{background:#f5f6f8;border-radius:7px;padding:9px 10px}
+.rp-kpi-l{font-size:.5rem;color:#8892a4;font-weight:700;text-transform:uppercase;letter-spacing:.06em;margin-bottom:2px}
+.rp-kpi-v{font-size:.86rem;font-weight:700;color:var(--ink)}
+
+/* FOOTER */
+footer{background:#fff;border-top:1px solid var(--ink4);padding:28px 24px;text-align:center}
+.ft-logo{font-family:var(--display);font-size:.95rem;font-weight:700;color:var(--ink);margin-bottom:5px;letter-spacing:-.02em}
+footer p{font-size:.7rem;color:var(--ink3)}
+footer a{color:var(--green);text-decoration:none}
+
+/* PayPal Smart Buttons — stati ausiliari */
+.pp-mount{width:100%;min-height:46px;display:flex;flex-direction:column;align-items:stretch;gap:8px}
+.pp-loading{font-size:.72rem;color:var(--ink3);text-align:center;padding:10px}
+.pp-err{font-size:.72rem;color:var(--red);text-align:center}
+.pp-need-login{width:100%;background:var(--green);color:#fff;border:none;border-radius:10px;padding:12px;font-size:.82rem;font-weight:600;cursor:pointer;font-family:var(--sans)}
+.pp-recheck{width:100%;background:transparent;border:1px solid var(--ink4);color:var(--ink2);border-radius:10px;padding:9px;font-size:.74rem;font-weight:600;cursor:pointer;font-family:var(--sans);margin-top:8px}
+.pp-recheck:hover{border-color:var(--ink2);color:var(--ink)}
+.pp-recheck:disabled{opacity:.6;cursor:wait}
+
+@media(max-width:520px){
+  .hero{padding:44px 16px 36px}
+  .cta-card{padding:28px 18px}
+  .cf-number{font-size:2.4rem}
+  .input-panel{position:relative;top:0!important}
+  .metrics{gap:8px}
+  #trial-gate{padding:16px 12px}
+  .gate-box,.paywall-box{padding:28px 22px}
+  .gate-sub{margin-bottom:18px}
+  .gate-features{margin-bottom:18px}
+  .gate-title,.paywall-title{font-size:1.5rem}
+}
+</style>
+</head>
+<body>
+
+<!-- ── TRIAL GATE OVERLAY ── -->
+<div id="trial-gate">
+  <!-- contenuto iniettato da JS (gate iniziale o paywall) -->
+</div>
+
+<!-- PROMO -->
+<div class="promo" id="promo-strip">
+  <p>⏳ <strong>3 giorni gratis</strong> — accesso completo, nessuna carta richiesta</p>
+  <button class="promo-close" onclick="closePromo()" aria-label="Chiudi">×</button>
+</div>
+
+<!-- TRIAL BANNER ore rimaste -->
+<div id="trial-banner"></div>
+
+<!-- STICKY SHELL: header + tabs -->
+<div class="sticky-shell" id="sticky-shell">
+  <header>
+    <a class="logo" href="#" aria-label="Consulenza con RenditaLab">
+      <div class="logo-mark" aria-hidden="true">
+        <svg viewBox="0 0 18 18" fill="none" aria-hidden="true"><path d="M3 13L7 8l3 3 5-6" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+      <span class="logo-name">Consulenza con RenditaLab</span>
+      <span class="logo-tag" aria-label="Strumento professionale">STRUMENTO PRO</span>
+    </a>
+  </header>
+  <div class="tipo-wrap" role="tablist">
+    <button class="tipo-tab active" onclick="setTipo('affitto',this)" role="tab" aria-selected="true">Affitto tradizionale</button>
+    <button class="tipo-tab" onclick="setTipo('airbnb',this)" role="tab" aria-selected="false">Affitto breve / Airbnb</button>
+    <button class="tipo-tab" onclick="setTipo('flip',this)" role="tab" aria-selected="false">Trading / Flip</button>
+  </div>
+</div>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-eyebrow">3 giorni gratis · Nessuna registrazione</div>
+  <h1>Calcola il rendimento<br>reale del tuo<br><em>investimento</em></h1>
+  <p class="hero-sub">Inserisci i dati dell'immobile e scopri subito cash flow, rendimento netto e proiezione 10 anni — con fiscalità italiana.</p>
+  <div class="hero-badges">
+    <span class="hero-badge">✓ Cedolare secca &amp; IRPEF</span>
+    <span class="hero-badge">✓ Simulazione mutuo</span>
+    <span class="hero-badge">✓ Proiezione 10 anni</span>
+    <span class="hero-badge">✓ Report PDF</span>
+  </div>
+</section>
+
+<!-- MAIN GRID -->
+<div class="main">
+
+  <!-- INPUT PANEL -->
+  <div class="input-panel" id="input-panel">
+    <div class="input-header">
+      <div class="input-title">Parametri immobile</div>
+      <div class="input-desc">Muovi gli slider per aggiornare l'analisi</div>
+    </div>
+    <div class="input-body">
+
+      <div class="field">
+        <div class="field-row">
+          <span class="field-label">Prezzo d'acquisto</span>
+          <span class="field-val" id="v-prezzo">€ 220.000</span>
+        </div>
+        <div class="track">
+          <div class="track-fill" id="tf-prezzo" style="background:var(--green)"></div>
+          <div class="track-thumb" id="tt-prezzo"></div>
+          <input type="range" id="s-prezzo" min="0" max="1000000" step="5000" value="220000" oninput="update()" aria-label="Prezzo acquisto">
+        </div>
+      </div>
+
+      <div class="field">
+        <div class="field-row">
+          <span class="field-label" id="lbl-canone">Canone mensile</span>
+          <span class="field-val" id="v-canone">€ 1.250</span>
+        </div>
+        <div class="track">
+          <div class="track-fill" id="tf-canone" style="background:var(--green)"></div>
+          <div class="track-thumb" id="tt-canone"></div>
+          <input type="range" id="s-canone" min="200" max="5000" step="50" value="1250" oninput="update()" aria-label="Canone">
+        </div>
+        <div class="field-note" id="note-canone" style="display:none"></div>
+      </div>
+
+      <div class="field">
+        <div class="field-row">
+          <span class="field-label" id="lbl-spese">Spese mensili (cond., mant.)</span>
+          <span class="field-val" id="v-spese">€ 180</span>
+        </div>
+        <div class="track">
+          <div class="track-fill" id="tf-spese" style="background:var(--gold)"></div>
+          <div class="track-thumb" id="tt-spese" style="border-color:var(--gold);box-shadow:0 0 0 3px rgba(196,123,0,.12)"></div>
+          <input type="range" id="s-spese" min="0" max="2000" step="10" value="180" oninput="update()" aria-label="Spese">
+        </div>
+      </div>
+
+      <div class="field" id="f-occ" style="display:none">
+        <div class="field-row">
+          <span class="field-label">Tasso occupazione</span>
+          <span class="field-val" id="v-occ">75%</span>
+        </div>
+        <div class="track">
+          <div class="track-fill" id="tf-occ" style="background:var(--blue)"></div>
+          <div class="track-thumb" id="tt-occ" style="border-color:var(--blue);box-shadow:0 0 0 3px rgba(26,107,191,.12)"></div>
+          <input type="range" id="s-occ" min="20" max="100" step="1" value="65" oninput="update()" aria-label="Occupazione">
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <div id="wrap-regime" style="margin-bottom:16px">
+        <label class="sel-label" for="s-regime">Regime fiscale</label>
+        <select id="s-regime" onchange="update()">
+          <option value="0.21">Cedolare secca 21%</option>
+          <option value="0.10">Cedolare secca 10% (canone concordato)</option>
+          <option value="0.23">IRPEF 23% — 1° scaglione</option>
+          <option value="0.35">IRPEF 35% — 2° scaglione</option>
+          <option value="0.43">IRPEF 43% — 3° scaglione</option>
+        </select>
+      </div>
+
+      <div class="divider" id="div-mutuo"></div>
+
+      <div id="wrap-mutuo">
+        <div class="toggle-row">
+          <span class="toggle-label">Finanziamento con mutuo</span>
+          <button class="toggle-pill" id="tgl-mutuo" onclick="toggleMutuo()" style="background:var(--green)" aria-label="Toggle mutuo" aria-pressed="true">
+            <div class="toggle-knob" id="knob-mutuo" style="left:21px"></div>
+          </button>
+        </div>
+        <div id="mutuo-fields">
+          <div class="field">
+            <div class="field-row"><span class="field-label">Quota finanziata (LTV)</span><span class="field-val" id="v-ltv">70%</span></div>
+            <div class="track"><div class="track-fill" id="tf-ltv" style="background:var(--blue)"></div><div class="track-thumb" id="tt-ltv" style="border-color:var(--blue);box-shadow:0 0 0 3px rgba(26,107,191,.12)"></div><input type="range" id="s-ltv" min="10" max="80" step="5" value="70" oninput="update()" aria-label="LTV"></div>
+          </div>
+          <div class="field">
+            <div class="field-row"><span class="field-label">Tasso d'interesse</span><span class="field-val" id="v-tasso">3,2%</span></div>
+            <div class="track"><div class="track-fill" id="tf-tasso" style="background:#e879a0"></div><div class="track-thumb" id="tt-tasso" style="border-color:#e879a0;box-shadow:0 0 0 3px rgba(232,121,160,.12)"></div><input type="range" id="s-tasso" min="0" max="8" step="0.1" value="3.2" oninput="update()" aria-label="Tasso mutuo"></div>
+          </div>
+          <div class="field">
+            <div class="field-row"><span class="field-label">Durata mutuo</span><span class="field-val" id="v-anni">30 anni</span></div>
+            <div class="track"><div class="track-fill" id="tf-anni" style="background:#9061ea"></div><div class="track-thumb" id="tt-anni" style="border-color:#9061ea;box-shadow:0 0 0 3px rgba(144,97,234,.12)"></div><input type="range" id="s-anni" min="5" max="30" step="1" value="30" oninput="update()" aria-label="Durata mutuo"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <div id="wrap-riv">
+        <div class="field" style="margin-bottom:0">
+          <div class="field-row"><span class="field-label">Rivalutazione immobile/anno</span><span class="field-val" id="v-riv">2%</span></div>
+          <div class="track"><div class="track-fill" id="tf-riv" style="background:var(--gold)"></div><div class="track-thumb" id="tt-riv" style="border-color:var(--gold);box-shadow:0 0 0 3px rgba(196,123,0,.12)"></div><input type="range" id="s-riv" min="0" max="5" step="0.5" value="2" oninput="update()" aria-label="Rivalutazione"></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- RESULTS -->
+  <div class="results" id="results-panel">
+
+    <div class="lockable" id="lock-cf">
+      <div class="lock-content">
+        <div class="cf-card positive" id="cf-card">
+          <div class="cf-tag pos" id="cf-tag">POSITIVO</div>
+          <div class="cf-eyebrow">Cash flow mensile</div>
+          <div class="cf-number" id="cf-num">+ € 136</div>
+          <div class="cf-desc pos" id="cf-desc">✓ L'operazione genera liquidità ogni mese</div>
+        </div>
+      </div>
+      <div class="lock-overlay" onclick="openAuthGate()"><span class="lock-badge"><svg viewBox="0 0 16 16" fill="none"><path d="M4 7V5a4 4 0 018 0v2m-9 0h10a1 1 0 011 1v6a1 1 0 01-1 1H3a1 1 0 01-1-1V8a1 1 0 011-1z" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>Registrati gratis per sbloccare</span><span class="lock-hint">Scopri il cash flow mensile reale del tuo investimento</span></div>
+    </div>
+
+    <div class="lockable" id="lock-metrics">
+      <div class="lock-content">
+    <div class="metrics" id="metrics-grid">
+      <div class="metric hl">
+        <div class="metric-label">Rendimento netto</div>
+        <div class="metric-val" id="m-netto">—</div>
+        <div class="metric-sub">Dopo tasse e spese</div>
+      </div>
+      <div class="metric">
+        <div class="metric-label">Rendimento lordo</div>
+        <div class="metric-val" id="m-lordo">—</div>
+        <div class="metric-sub">Canone annuo / prezzo</div>
+      </div>
+      <div class="metric">
+        <div class="metric-label">Cap Rate</div>
+        <div class="metric-val" id="m-cap">—</div>
+        <div class="metric-sub">NOI / prezzo acquisto</div>
+      </div>
+      <div class="metric hl-gold" id="m-coc-card">
+        <div class="metric-label">Cash on Cash</div>
+        <div class="metric-val" id="m-coc">—</div>
+        <div class="metric-sub">CF annuo / capitale</div>
+      </div>
+    </div>
+      </div>
+      <div class="lock-overlay" onclick="openAuthGate()"><span class="lock-badge"><svg viewBox="0 0 16 16" fill="none"><path d="M4 7V5a4 4 0 018 0v2m-9 0h10a1 1 0 011 1v6a1 1 0 01-1 1H3a1 1 0 01-1-1V8a1 1 0 011-1z" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>Registrati gratis per sbloccare</span><span class="lock-hint">Rendimento netto, Cap Rate e Cash on Cash completi</span></div>
+    </div>
+
+    <div class="lockable" id="lock-breakdown">
+      <div class="lock-content">
+    <div class="breakdown">
+      <div class="breakdown-title">Flusso di cassa annuale</div>
+      <div class="bd-row"><span class="bd-key" id="bd-key-canone">Canone annuo lordo</span><span class="bd-val income" id="bd-canone">—</span></div>
+      <div class="bd-row"><span class="bd-key" id="bd-key-spese">Spese operative</span><span class="bd-val expense" id="bd-spese">—</span></div>
+      <div class="bd-row" id="bd-imposte-row"><span class="bd-key">Imposte (<span id="bd-regime-label">ced. 21%</span>)</span><span class="bd-val expense" id="bd-imposte">—</span></div>
+      <div class="bd-row" id="bd-mutuo-row"><span class="bd-key">Rata mutuo annua</span><span class="bd-val mutuo-v" id="bd-mutuo">—</span></div>
+      <div class="bd-row"><span class="bd-key" id="bd-key-cf">Cash flow annuo</span><span class="bd-val" id="bd-cf">—</span></div>
+    </div>
+      </div>
+      <div class="lock-overlay" onclick="openAuthGate()"><span class="lock-badge"><svg viewBox="0 0 16 16" fill="none"><path d="M4 7V5a4 4 0 018 0v2m-9 0h10a1 1 0 011 1v6a1 1 0 01-1 1H3a1 1 0 01-1-1V8a1 1 0 011-1z" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>Registrati gratis per sbloccare</span><span class="lock-hint">Dettaglio completo di imposte, rata mutuo e flusso netto</span></div>
+    </div>
+
+    <div class="lockable" id="lock-chart">
+      <div class="lock-content">
+    <div class="chart-card" id="chart-wrap">
+      <div class="chart-header">
+        <div>
+          <div class="chart-title">Proiezione 10 anni</div>
+          <div class="chart-sub">Rivalutazione <span id="riv-lbl">2%</span>/anno inclusa</div>
+        </div>
+        <div class="chart-stats">
+          <div>
+            <div class="chart-stat-l">CF cumulativo</div>
+            <div class="chart-stat-v" id="st-cf">—</div>
+          </div>
+          <div>
+            <div class="chart-stat-l">Apprezzamento</div>
+            <div class="chart-stat-v" style="color:var(--gold)" id="st-plus">—</div>
+          </div>
+        </div>
+      </div>
+      <svg class="linechart" id="svg-chart" viewBox="0 0 700 88" preserveAspectRatio="none" aria-hidden="true"></svg>
+      <div class="chart-years" id="chart-yrs"></div>
+    </div>
+      </div>
+      <div class="lock-overlay" onclick="openAuthGate()"><span class="lock-badge"><svg viewBox="0 0 16 16" fill="none"><path d="M4 7V5a4 4 0 018 0v2m-9 0h10a1 1 0 011 1v6a1 1 0 01-1 1H3a1 1 0 01-1-1V8a1 1 0 011-1z" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>Registrati gratis per sbloccare</span><span class="lock-hint">Proiezione a 10 anni: CF cumulativo e plusvalenza</span></div>
+    </div>
+
+    <!-- CTA con PayPal -->
+    <div class="cta-card">
+      <div class="cta-eyebrow">Vuoi fare di più?</div>
+      <h2>Salva l'analisi e genera<br>il <em>report PDF</em> con il tuo brand</h2>
+      <p>Accesso annuale a €49,00 · 3 giorni di prova gratuiti inclusi</p>
+      <div class="cta-btns">
+        <button class="btn-cta-main" onclick="document.getElementById('input-panel').scrollIntoView({behavior:'smooth'})">Prova il calcolatore ↑</button>
+        <button class="btn-cta-sec" id="btn-pdf" onclick="generatePDF()">
+          <svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M8 1v9m0 0L4.5 6.5M8 10l3.5-3.5M2 13h12" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <span id="btn-pdf-label">Scarica Report PDF</span>
+        </button>
+      </div>
+      <div class="cta-paypal">
+        <div class="cta-paypal-label">Accesso annuale · €49,00</div>
+        <div style="width:100%;max-width:280px">
+          <div class="pp-mount" id="pp-cta"></div>
+          <button class="pp-recheck" onclick="recheckPaid(this)">Ho pagato → ricontrolla</button>
+        </div>
+      </div>
+      <div class="report-preview" id="rp-wrap">
+        <div class="rp-blur">
+          <p>Report completo incluso nella consulenza</p>
+        </div>
+        <div class="rp-head">
+          <div>
+            <div style="font-family:var(--display);font-size:.9rem;font-weight:700;color:var(--green2)">Consulenza con RenditaLab</div>
+            <div style="font-size:.56rem;color:rgba(255,255,255,.4)">Analisi Finanziaria Immobiliare</div>
+          </div>
+          <div style="font-size:.58rem;color:rgba(255,255,255,.4);text-align:right">
+            <div>Report generato</div>
+            <div id="rp-date" style="color:rgba(255,255,255,.65)"></div>
+          </div>
+        </div>
+        <div class="rp-body">
+          <div style="font-size:.72rem;font-weight:700;color:var(--ink);margin-bottom:3px">Analisi Investimento Immobiliare</div>
+          <div style="font-size:.6rem;color:var(--ink3);margin-bottom:12px" id="rp-sub"></div>
+          <div class="rp-kpis">
+            <div class="rp-kpi"><div class="rp-kpi-l">Rend. Netto</div><div class="rp-kpi-v" id="rp-netto">—</div></div>
+            <div class="rp-kpi"><div class="rp-kpi-l">CF / mese</div><div class="rp-kpi-v" id="rp-cf">—</div></div>
+            <div class="rp-kpi"><div class="rp-kpi-l">Cap Rate</div><div class="rp-kpi-v" id="rp-cap">—</div></div>
+          </div>
+          <div style="height:40px;background:var(--bg);border-radius:6px;display:flex;align-items:center;justify-content:center">
+            <span style="font-size:.56rem;color:var(--ink4)">[ Grafico proiezione · 10 anni ]</span>
+          </div>
+          <div style="margin-top:10px;padding-top:8px;border-top:1px solid var(--bg3);display:flex;justify-content:space-between">
+            <span style="font-size:.52rem;color:var(--ink4)">Consulenza con RenditaLab</span>
+            <span style="font-size:.52rem;color:var(--ink4)">Documento riservato</span>
+          </div>
+        </div>
+      </div>
+      <div class="trust-row">
+        <span class="trust-item">🔒 PayPal · Pagamenti sicuri</span>
+        <span class="trust-item">📋 GDPR compliant</span>
+        
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<footer>
+  <div class="ft-logo">Consulenza con RenditaLab</div>
+  <p>Analisi finanziaria immobiliare per il mercato italiano</p>
+</footer>
+
+<script>
+// ── TRIAL SERVER-SIDE (Supabase) ──
+// La VALIDITA' del trial (timestamp scadenza in tabella `trials`, legato all'email)
+// e' verificata server-side via Edge Function: questo NON e' aggirabile cambiando
+// browser/incognito/dispositivo.
+// ATTENZIONE: il GATING DEI RISULTATI e' invece puramente cosmetico (CSS blur).
+// I valori sono calcolati client-side in update() e restano leggibili via DevTools
+// (textContent) o rimuovendo la classe .locked. Funziona come gate marketing/lead-gen,
+// NON come protezione del contenuto. Per enforcement reale: spostare il calcolo
+// nell'Edge Function e restituire i numeri solo se data.valid === true.
+
+const SUPABASE_URL  = 'https://xpnpdkaaeudufupovsxm.supabase.co'
+const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhwbnBka2FhZXVkdWZ1cG92c3htIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIyMDAxMDAsImV4cCI6MjA5Nzc3NjEwMH0.hz4axSF4e56x3-DhrBmQs-99uS0bPtrDg87lbvJQ0-4'
+
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON)
+
+// ── PAYPAL (Orders API + Smart Buttons) ──
+// Client ID PUBBLICO (non segreto): sostituire col Client ID LIVE dell'app PayPal.
+const PAYPAL_CLIENT_ID = 'ASwcfjfu-U-fr5htzv7A88WcfjR5oO9KrgrYU1k_Of145HVx41c_0WF6E99ppiWBwMihRVbuWnLNcDyA'
+const FN = SUPABASE_URL + '/functions/v1'
+
+let _ppSdk = null
+function loadPayPalSDK() {
+  if (_ppSdk) return _ppSdk
+  _ppSdk = new Promise((resolve, reject) => {
+    if (window.paypal) return resolve(window.paypal)
+    if (!PAYPAL_CLIENT_ID || PAYPAL_CLIENT_ID.indexOf('INSERISCI') === 0) {
+      reject(new Error('paypal_client_id_missing')); return
+    }
+    const s = document.createElement('script')
+    s.src = 'https://www.paypal.com/sdk/js?client-id=' + encodeURIComponent(PAYPAL_CLIENT_ID) + '&currency=EUR&intent=capture'
+    s.onload = () => resolve(window.paypal)
+    s.onerror = () => reject(new Error('paypal_sdk_load_failed'))
+    document.head.appendChild(s)
+  })
+  return _ppSdk
+}
+
+// Monta gli Smart Buttons nel container. Richiede sessione (serve user_id per il custom_id).
+async function mountPayPal(container) {
+  if (!container) return
+  const { data: { session } } = await sb.auth.getSession()
+  if (!session) {
+    container.innerHTML = '<button class="pp-need-login" onclick="openAuthGate()">Registrati gratis per attivare l\'accesso</button>'
+    return
+  }
+  container.innerHTML = '<div class="pp-loading">Caricamento PayPal…</div>'
+  let paypal
+  try { paypal = await loadPayPalSDK() }
+  catch (e) { container.innerHTML = '<p class="pp-err">PayPal non disponibile al momento.</p>'; return }
+  container.innerHTML = ''
+  try {
+    await paypal.Buttons({
+      style: { layout: 'vertical', color: 'gold', shape: 'rect', label: 'pay', height: 42 },
+      // Ordine creato lato server: importo e custom_id non sono manomettibili dal client.
+      createOrder: async () => {
+        const { data: { session: s } } = await sb.auth.getSession()
+        const r = await fetch(FN + '/paypal-create-order', {
+          method: 'POST',
+          headers: { 'Authorization': 'Bearer ' + s.access_token, 'apikey': SUPABASE_ANON, 'Content-Type': 'application/json' }
+        })
+        const d = await r.json()
+        if (!d.ok) throw new Error(d.reason || 'create_failed')
+        return d.id
+      },
+      // Cattura lato server con validazione importo + custom_id == utente.
+      onApprove: async (data) => {
+        const { data: { session: s } } = await sb.auth.getSession()
+        const r = await fetch(FN + '/paypal-capture-order', {
+          method: 'POST',
+          headers: { 'Authorization': 'Bearer ' + s.access_token, 'apikey': SUPABASE_ANON, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ orderID: data.orderID })
+        })
+        const d = await r.json()
+        if (d.ok && d.paid) {
+          applyVisibility('paid')
+          const gate = document.getElementById('trial-gate')
+          if (gate) { gate.classList.remove('visible'); gate.innerHTML = ''; unlockBody() }
+        } else {
+          alert('Pagamento ricevuto. Se l\'accesso non si sblocca subito, usa "Ho pagato → ricontrolla".')
+        }
+      },
+      onError: (err) => { console.error('PayPal error:', err) }
+    }).render(container)
+  } catch (e) {
+    container.innerHTML = '<p class="pp-err">Impossibile inizializzare PayPal.</p>'
+  }
+}
+
+// Ricontrolla lo stato pagamento (post-checkout) senza refresh manuale.
+async function recheckPaid(btn) {
+  if (btn) { btn.disabled = true; btn.textContent = 'Verifica…' }
+  try {
+    const { data: { session } } = await sb.auth.getSession()
+    if (session) await checkTrial(session)
+  } catch (e) { /* no-op */ }
+  if (btn) { btn.disabled = false; btn.textContent = 'Ho pagato → ricontrolla' }
+}
+
+// Blocco PayPal per gate/paywall: placeholder montato dopo l'inserimento nel DOM.
+function buildPayPalBlock() {
+  return `
+    <div class="pp-mount"></div>
+    <button class="pp-recheck" onclick="recheckPaid(this)">Ho pagato → ricontrolla</button>`
+}
+
+// Bonifico bancario — predisposto ma nascosto (display:none)
+function buildBonificoBlock() {
+  return `
+    <div class="bonifico-block" style="display:none;margin-top:14px;padding:14px 16px;background:var(--bg3);border-radius:var(--r);text-align:left">
+      <div style="font-size:.7rem;font-weight:700;color:var(--ink2);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">Pagamento con bonifico bancario</div>
+      <div style="font-size:.74rem;color:var(--ink2);line-height:1.7">
+        <div><strong>Intestatario:</strong> <span data-bonifico="intestatario">—</span></div>
+        <div><strong>IBAN:</strong> <span data-bonifico="iban">—</span></div>
+        <div><strong>Banca:</strong> <span data-bonifico="banca">—</span></div>
+        <div><strong>Importo:</strong> € 49,00</div>
+        <div><strong>Causale:</strong> <span data-bonifico="causale">Consulenza con RenditaLab — accesso annuale</span></div>
+      </div>
+      <div style="font-size:.62rem;color:var(--ink3);margin-top:8px;font-style:italic">Invia la ricevuta del bonifico per l'attivazione dell'accesso.</div>
+    </div>`
+}
+
+function lockBody(){ document.body.style.overflow='hidden' }
+function unlockBody(){ document.body.style.overflow='' }
+
+// Schermata login con email (magic link)
+function showLoginGate(msg) {
+  const gate = document.getElementById('trial-gate')
+  gate.innerHTML = `
+    <div class="gate-box">
+      <button onclick="closeAuthGate()" aria-label="Chiudi" style="
+        position:absolute;top:14px;right:14px;background:var(--bg3);border:none;
+        width:30px;height:30px;border-radius:50%;cursor:pointer;font-size:1rem;
+        color:var(--ink2);line-height:1;font-family:var(--sans)">×</button>
+      <div class="gate-icon">
+        <svg width="24" height="24" viewBox="0 0 18 18" fill="none">
+          <path d="M3 13L7 8l3 3 5-6" stroke="var(--green)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <h2 class="gate-title">Sblocca i risultati completi</h2>
+      <p class="gate-sub">Registrati gratis con la tua email: sblocchi cash flow, rendimento netto, Cap Rate, proiezione 10 anni e report PDF. 3 giorni di prova, nessuna carta richiesta.</p>
+      <input id="gate-email" type="email" inputmode="email" placeholder="nome@email.it" style="
+        width:100%;border:1.5px solid var(--ink4);border-radius:10px;padding:11px 14px;
+        font-size:.85rem;font-family:var(--sans);margin-bottom:10px;outline:none">
+      <button id="gate-send" onclick="sendMagicLink()" style="
+        width:100%;background:var(--green);color:#fff;border:none;border-radius:10px;
+        padding:12px;font-size:.85rem;font-weight:600;cursor:pointer;font-family:var(--sans)">
+        Sblocca gratis i risultati →
+      </button>
+      <p id="gate-msg" style="font-size:.72rem;color:var(--ink3);margin-top:12px;min-height:18px">${msg||''}</p>
+      <div class="gate-paypal" style="margin-top:8px">
+        <p style="font-size:.72rem;color:var(--ink3);margin-bottom:4px">Oppure attiva subito l'accesso annuale (€49,00):</p>
+        ${buildPayPalBlock()}
+      </div>
+      ${buildBonificoBlock()}
+    </div>`
+  // posizionamento relativo per il pulsante di chiusura
+  const box = gate.querySelector('.gate-box')
+  if (box) box.style.position = 'relative'
+  gate.classList.add('visible')
+  lockBody()
+  mountPayPal(gate.querySelector('.pp-mount'))
+}
+
+// Chiude il modal di registrazione: l'utente torna alla demo (risultati bloccati)
+function closeAuthGate() {
+  const gate = document.getElementById('trial-gate')
+  gate.classList.remove('visible')
+  gate.innerHTML = ''
+  unlockBody()
+}
+
+async function sendMagicLink() {
+  const raw = (document.getElementById('gate-email')||{}).value || ''
+  const email = raw.trim()
+  const msg = document.getElementById('gate-msg')
+  const btn = document.getElementById('gate-send')
+  // Validazione: niente spazi, una sola @, dominio con TLD. include('@') accettava 'a@', '@', ecc.
+  const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+  if (!EMAIL_RE.test(email)) { if(msg) msg.textContent='Inserisci un indirizzo email valido.'; return }
+  if (btn) { btn.disabled = true; btn.textContent = 'Invio in corso...' }
+  const { error } = await sb.auth.signInWithOtp({
+    email, // valore già trimmato: evita OTP inviato a indirizzo con spazi
+    options: { emailRedirectTo: window.location.href.split('#')[0] }
+  })
+  if (error) {
+    if(msg) msg.textContent = 'Errore: ' + error.message
+    // Label ripristinata identica a quella iniziale del bottone (no drift di copy)
+    if (btn) { btn.disabled = false; btn.textContent = 'Sblocca gratis i risultati →' }
+  } else {
+    if(msg) msg.innerHTML = '✅ Link inviato! Controlla la tua email (anche nello spam) e clicca per accedere.'
+    if (btn) btn.style.display = 'none'
+  }
+}
+
+// Schermata trial scaduto → paywall
+function showPaywall() {
+  const gate = document.getElementById('trial-gate')
+  gate.innerHTML = `
+    <div class="paywall-box">
+      <div class="paywall-badge">PROVA TERMINATA</div>
+      <h2 class="paywall-title">I tuoi 3 giorni<br>sono terminati</h2>
+      <p class="paywall-sub">Attiva l'accesso annuale a €49,00 per continuare a usare Consulenza con RenditaLab senza limiti.</p>
+      <div class="paywall-paypal">
+        ${buildPayPalBlock()}
+      </div>
+      ${buildBonificoBlock()}
+      <p style="font-size:.62rem;color:var(--ink3);margin-top:14px">
+        <a onclick="sbLogout()" style="color:var(--ink3);text-decoration:underline;cursor:pointer">Esci / cambia account</a>
+      </p>
+    </div>`
+  gate.classList.add('visible')
+  lockBody()
+  mountPayPal(gate.querySelector('.pp-mount'))
+}
+
+function hideGate() {
+  const gate = document.getElementById('trial-gate')
+  gate.classList.remove('visible')
+  gate.innerHTML = ''
+  unlockBody()
+}
+
+async function sbLogout() {
+  await sb.auth.signOut()
+  location.reload()
+}
+
+function showTrialBanner(secondsLeft) {
+  const banner = document.getElementById('trial-banner')
+  if (!banner) return
+  const hLeft = Math.floor(secondsLeft / 3600)
+  const dLeft = Math.ceil(secondsLeft / 86400)
+  banner.style.display = 'block'
+  const buyLink = ` · <a href="#" onclick="document.querySelector('.cta-paypal').scrollIntoView({behavior:'smooth'});return false" style="color:#856404;font-weight:700;text-decoration:underline">Attiva accesso annuale €49,00</a>`
+  banner.innerHTML = hLeft < 24
+    ? `⏳ Prova in scadenza: <strong>${hLeft} ore rimaste</strong>${buyLink}`
+    : `⏳ Prova gratuita: <strong>${dLeft} giorni rimasti</strong>${buyLink}`
+}
+
+// ── FREEMIUM: gestione visibilità risultati ──
+// Sezioni bloccabili per i visitatori non registrati
+const LOCKABLE_IDS = ['lock-cf','lock-metrics','lock-breakdown','lock-chart']
+
+function setLocked(locked) {
+  LOCKABLE_IDS.forEach(id => {
+    const el = document.getElementById(id)
+    if (el) el.classList.toggle('locked', locked)
+  })
+  // Bottone PDF: disabilitato per anonimi
+  const pdf = document.getElementById('btn-pdf')
+  if (pdf) {
+    pdf.disabled = locked
+    pdf.style.opacity = locked ? '.55' : ''
+    pdf.title = locked ? 'Registrati gratis per scaricare il report' : ''
+  }
+}
+
+// Apre il modal di registrazione (cliccando su una sezione bloccata)
+function openAuthGate() {
+  showLoginGate()
+}
+
+// Banner per visitatore non registrato (non blocca la piattaforma)
+function showAnonBanner() {
+  const banner = document.getElementById('trial-banner')
+  if (!banner) return
+  banner.style.display = 'block'
+  banner.innerHTML = `🔓 <strong>Registrati gratis</strong> per sbloccare tutti i risultati · 3 giorni di prova · `
+    + `<a href="#" onclick="openAuthGate();return false" style="color:#856404;font-weight:700;text-decoration:underline">Sblocca ora</a>`
+}
+
+// Applica lo stato di visibilità in base alla condizione utente
+// 'anon' = risultati parziali | 'trial' = tutto sbloccato | 'expired' = paywall
+function applyVisibility(state, secondsLeft) {
+  if (state === 'trial') {
+    hideGate()
+    setLocked(false)
+    if (secondsLeft != null) showTrialBanner(secondsLeft)
+  } else if (state === 'paid') {
+    hideGate()
+    setLocked(false)
+    const banner = document.getElementById('trial-banner')
+    if (banner) banner.style.display = 'none'
+  } else if (state === 'expired') {
+    setLocked(true)       // risultati comunque oscurati dietro al paywall
+    showPaywall()
+  } else { // anon
+    hideGate()
+    setLocked(true)
+    showAnonBanner()
+  }
+}
+
+// Verifica stato trial via Edge Function (server-side)
+async function checkTrial(session) {
+  try {
+    const res = await fetch(`${SUPABASE_URL}/functions/v1/check-trial`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${session.access_token}`,
+        'apikey': SUPABASE_ANON,
+        'Content-Type': 'application/json'
+      }
+    })
+    const data = await res.json()
+    if (data.valid) {
+      applyVisibility(data.paid ? 'paid' : 'trial', data.seconds_left)
+    } else {
+      applyVisibility('expired')
+    }
+  } catch (e) {
+    // Errore rete: resta in stato anonimo (risultati bloccati, piattaforma visibile)
+    applyVisibility('anon')
+  }
+}
+
+// ── INIT FREEMIUM ──
+// La piattaforma (slider + rendimento di base) è SEMPRE visibile.
+// I risultati chiave sono oscurati finché l'utente non si registra.
+// Dopo la registrazione: 3 giorni di accesso completo, poi paywall.
+;(async function initTrial() {
+  hideGate()
+  setLocked(true) // di default i risultati partono bloccati
+  try {
+    const { data: { session } } = await sb.auth.getSession()
+    if (session) {
+      await checkTrial(session)
+    } else {
+      applyVisibility('anon')
+    }
+  } catch (e) {
+    // getSession puo' rigettare (rete/SDK): degradiamo a stato anonimo invece di rompere l'app
+    applyVisibility('anon')
+  }
+  mountPayPal(document.getElementById('pp-cta')) // CTA sempre presente in pagina
+  sb.auth.onAuthStateChange(async (event, s) => {
+    if (event === 'SIGNED_IN' && s) await checkTrial(s)
+    if (event === 'SIGNED_OUT') applyVisibility('anon')
+    mountPayPal(document.getElementById('pp-cta')) // ri-monta: alterna "registrati" ↔ bottoni
+  })
+})()
+
+
+// ── STICKY TOP ──
+let tipo='affitto', hasMutuo=true;
+
+function updateStickyTop(){
+  const shell=document.getElementById('sticky-shell');
+  if(!shell)return;
+  const h=shell.offsetHeight;
+  const banner=document.getElementById('trial-banner');
+  const bh=(banner&&banner.style.display!=='none')?banner.offsetHeight:0;
+  document.getElementById('input-panel').style.setProperty('top',(h+bh+12)+'px');
+}
+
+function closePromo(){
+  const p=document.getElementById('promo-strip');
+  if(p){p.remove();updateStickyTop();}
+}
+
+window.addEventListener('load',updateStickyTop);
+window.addEventListener('resize',updateStickyTop);
+
+// ── FORMAT ──
+const N=n=>new Intl.NumberFormat('it-IT',{maximumFractionDigits:0}).format(Math.round(Math.abs(n)));
+const EUR=n=>'€\u00a0'+N(n);
+const PCT=n=>n.toFixed(2).replace('.',',')+'\u202f%';
+
+// ── SLIDERS ──
+function sldr(id,min,max,val){
+  const pct=Math.max(0,Math.min(100,((val-min)/(max-min))*100));
+  const f=document.getElementById('tf-'+id);
+  const t=document.getElementById('tt-'+id);
+  if(f)f.style.width=pct+'%';
+  if(t)t.style.left='calc('+pct+'% - 8px)';
+}
+const sv=id=>{const el=document.getElementById('s-'+id);return el?parseFloat(el.value):0;};
+
+// ── TIPO ──
+function setTipo(t,el){
+  tipo=t;
+  document.querySelectorAll('.tipo-tab').forEach(b=>{b.classList.remove('active');b.setAttribute('aria-selected','false');});
+  el.classList.add('active');el.setAttribute('aria-selected','true');
+
+  const isAir=(t==='airbnb'), isFlip=(t==='flip');
+
+  document.getElementById('lbl-canone').textContent=
+    isAir?'Canone notte medio': isFlip?'Prezzo rivendita atteso':'Canone mensile';
+
+  const noteEl=document.getElementById('note-canone');
+  if(isFlip){
+    noteEl.textContent='Stima del prezzo a cui rivenderai l\'immobile dopo la ristrutturazione';
+    noteEl.style.display='block';
+  }else if(isAir){
+    noteEl.textContent='Canone medio per notte (commissioni piattaforma ~32% già incluse nel calcolo)';
+    noteEl.style.display='block';
+  }else{
+    noteEl.style.display='none';
+  }
+
+  document.getElementById('lbl-spese').textContent=
+    isFlip?'Costi totali (rist. + notaio + agenzia)':'Spese mensili (IMU, cond., mant.)';
+
+  const sc=document.getElementById('s-canone');
+  if(isFlip){sc.min=50000;sc.max=1500000;sc.step=5000;if(parseFloat(sc.value)<50000)sc.value=280000;}
+  else if(isAir){sc.min=20;sc.max=800;sc.step=10;if(parseFloat(sc.value)>800)sc.value=120;}
+  else{sc.min=200;sc.max=5000;sc.step=50;if(parseFloat(sc.value)>5000)sc.value=900;}
+
+  const ss=document.getElementById('s-spese');
+  if(isFlip){ss.min=0;ss.max=200000;ss.step=1000;if(parseFloat(ss.value)<1000)ss.value=30000;}
+  else{ss.min=0;ss.max=2000;ss.step=10;if(parseFloat(ss.value)>2000)ss.value=180;}
+
+  document.getElementById('f-occ').style.display=isAir?'block':'none';
+  document.getElementById('wrap-regime').style.display=isFlip?'none':'block';
+  document.getElementById('div-mutuo').style.display=isFlip?'none':'block';
+  document.getElementById('wrap-mutuo').style.display=isFlip?'none':'block';
+  document.getElementById('wrap-riv').style.display=isFlip?'none':'block';
+
+  document.getElementById('bd-imposte-row').style.display=isFlip?'none':'flex';
+  document.getElementById('bd-mutuo-row').style.display=(!isFlip&&hasMutuo)?'flex':'none';
+
+  if(isFlip){
+    document.getElementById('bd-key-canone').textContent='Prezzo rivendita';
+    document.getElementById('bd-key-spese').textContent='Costi totali operazione';
+    document.getElementById('bd-key-cf').textContent='Profitto netto stimato';
+  }else{
+    document.getElementById('bd-key-canone').textContent='Canone annuo lordo';
+    document.getElementById('bd-key-spese').textContent='Spese operative';
+    document.getElementById('bd-key-cf').textContent='Cash flow annuo';
+  }
+
+  document.getElementById('cf-card').querySelector('.cf-eyebrow').textContent=
+    isFlip?'Profitto netto stimato':'Cash flow mensile';
+
+  document.getElementById('metrics-grid').style.display=isFlip?'none':'grid';
+  document.getElementById('chart-wrap').style.display=isFlip?'none':'block';
+
+  update();
+}
+
+// ── MUTUO ──
+function toggleMutuo(){
+  hasMutuo=!hasMutuo;
+  const btn=document.getElementById('tgl-mutuo');
+  btn.style.background=hasMutuo?'var(--green)':'var(--ink4)';
+  btn.setAttribute('aria-pressed',hasMutuo);
+  document.getElementById('knob-mutuo').style.left=hasMutuo?'21px':'3px';
+  document.getElementById('mutuo-fields').style.display=hasMutuo?'block':'none';
+  document.getElementById('bd-mutuo-row').style.display=hasMutuo?'flex':'none';
+  update();
+}
+
+// ── CHART ──
+function drawChart(data,pos){
+  const svg=document.getElementById('svg-chart');
+  if(!svg)return;
+  const W=700,H=88,pd=6;
+  const vals=data.map(d=>d.cf);
+  const mx=Math.max(...vals),mn=Math.min(...vals),rng=mx-mn||1;
+  const pts=data.map((d,i)=>{
+    const x=(i/(data.length-1))*(W-pd*2)+pd;
+    const y=H-pd-((d.cf-mn)/rng)*(H-pd*2-4);
+    return[x,y];
+  });
+  const col=pos?'var(--green)':'var(--red)';
+  const areaPath='M'+pts[0][0]+','+H+' '+pts.map(p=>'L'+p[0]+','+p[1]).join(' ')+' L'+pts[pts.length-1][0]+','+H+'Z';
+  const linePath='M'+pts.map(p=>p[0]+','+p[1]).join('L');
+  svg.innerHTML='<defs><linearGradient id="lg" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="'+col+'" stop-opacity="0.18"/><stop offset="100%" stop-color="'+col+'" stop-opacity="0"/></linearGradient></defs>'
+    +'<path d="'+areaPath+'" fill="url(#lg)"/>'
+    +'<path d="'+linePath+'" fill="none" stroke="'+col+'" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"/>'
+    +pts.filter((_,i)=>i%3===0||i===pts.length-1).map(p=>'<circle cx="'+p[0]+'" cy="'+p[1]+'" r="3.5" fill="#fff" stroke="'+col+'" stroke-width="2"/>').join('');
+
+  const yrsEl=document.getElementById('chart-yrs');
+  yrsEl.innerHTML=data.filter((_,i)=>[0,2,4,6,9].includes(i)).map(d=>
+    '<div class="chart-year"><div>Anno '+d.anno+'</div>'
+    +'<div style="font-weight:700;color:'+(d.cf>=0?'var(--green)':'var(--red)')+';">'
+    +(d.cf>=0?'+':'-')+'€'+N(d.cf)+'</div></div>'
+  ).join('');
+}
+
+// ── COSTANTI MODELLO FINANZIARIO ──
+// Centralizzate: niente numeri magici sparsi nella logica di calcolo.
+const CEDOLARE_MAX   = 0.21   // soglia che distingue cedolare (base lorda) da IRPEF (base 95%)
+const IRPEF_FORFAIT  = 0.95   // deduzione forfettaria 5% sul canone in regime IRPEF
+const AIRBNB_NET     = 0.68   // canone netto da commissioni piattaforma + gestione (~32% trattenuto)
+const FLIP_TAX       = 0.26   // imposta sostitutiva su plusvalenza immobiliare (rivendita <5 anni)
+const GROWTH_CANONE  = 0.015  // crescita canone /anno (proiezione)
+const GROWTH_SPESE   = 0.02   // crescita spese /anno (proiezione)
+
+// ── UPDATE PRINCIPALE ──
+function update(){
+  const prezzo=sv('prezzo'), canone=sv('canone'), spese=sv('spese');
+  const aliquota=parseFloat(sv('regime'))||0.21;
+  const ltv=sv('ltv'), riv=sv('riv');
+  const tasso=Math.max(0, sv('tasso'));
+  const anni=Math.max(1, sv('anni'));
+
+  const sOcc=document.getElementById('s-occ');
+  ['prezzo','canone','spese','ltv','tasso','anni','riv'].forEach(id=>{
+    const el=document.getElementById('s-'+id);
+    if(el)sldr(id,parseFloat(el.min),parseFloat(el.max),parseFloat(el.value));
+  });
+  if(sOcc)sldr('occ',parseFloat(sOcc.min),parseFloat(sOcc.max),parseFloat(sOcc.value));
+
+  document.getElementById('v-prezzo').textContent=EUR(prezzo);
+  const isFlip=(tipo==='flip'), isAir=(tipo==='airbnb');
+  document.getElementById('v-canone').textContent=
+    isAir?'€\u00a0'+canone+'/notte': isFlip?EUR(canone):EUR(canone);
+  document.getElementById('v-spese').textContent=isFlip?EUR(spese):EUR(spese)+'/mese';
+  document.getElementById('v-occ').textContent=(sOcc?sOcc.value:65)+'%';
+  document.getElementById('v-ltv').textContent=ltv+'%';
+  const tassoEl=document.getElementById('s-tasso');
+  document.getElementById('v-tasso').textContent=(tassoEl?parseFloat(tassoEl.value).toFixed(1).replace('.',','):'3,2')+' %';
+  document.getElementById('v-anni').textContent=anni+' anni';
+  document.getElementById('v-riv').textContent=riv+' %';
+  document.getElementById('riv-lbl').textContent=riv+'%';
+
+  if(!isFlip){
+    const regimeText=document.getElementById('s-regime').selectedOptions[0].text.split('—')[0].split('%')[0].trim()+' %';
+    document.getElementById('bd-regime-label').textContent=regimeText;
+  }
+
+  // ── FLIP ──
+  if(isFlip){
+    const prezzoAcquisto=prezzo;
+    const prezzoVendita=canone;
+    const costiTotali=spese;
+    const plusvalenzaLorda=prezzoVendita-prezzoAcquisto;
+    // Base imponibile = corrispettivo − (prezzo acquisto + costi inerenti/incrementativi).
+    // I costi di ristrutturazione/notaio/agenzia riducono la plusvalenza tassabile (TUIR art. 68).
+    const baseImponibile=Math.max(0,prezzoVendita-prezzoAcquisto-costiTotali);
+    const imposteFlip=baseImponibile*FLIP_TAX;
+    const profittoNetto=plusvalenzaLorda-costiTotali-imposteFlip;
+    // ROI su capitale totale investito (acquisto + tutti i costi accessori), non solo sul prezzo.
+    const capitaleInvestito=prezzoAcquisto+costiTotali;
+    const roiFlip=capitaleInvestito>0?(profittoNetto/capitaleInvestito)*100:0;
+    const pos=profittoNetto>=0;
+
+    const card=document.getElementById('cf-card');
+    card.className='cf-card '+(pos?'positive':'negative');
+    document.getElementById('cf-num').textContent=(pos?'+ ':'− ')+'€\u00a0'+N(profittoNetto);
+    document.getElementById('cf-tag').textContent=pos?'OPERAZIONE OK':'OPERAZIONE IN PERDITA';
+    document.getElementById('cf-tag').className='cf-tag '+(pos?'pos':'neg');
+    document.getElementById('cf-desc').textContent=pos
+      ?'✓ Plusvalenza positiva sull\'operazione'
+      :'⚠ L\'operazione genera una perdita — rivedi i numeri';
+    document.getElementById('cf-desc').className='cf-desc '+(pos?'pos':'neg');
+
+    document.getElementById('bd-canone').textContent=(prezzoVendita>=0?'+ ':'− ')+'€\u00a0'+N(prezzoVendita);
+    document.getElementById('bd-spese').textContent='− €\u00a0'+N(costiTotali);
+    const cfBd=document.getElementById('bd-cf');
+    cfBd.textContent=(profittoNetto>=0?'+ ':'− ')+'€\u00a0'+N(Math.abs(profittoNetto));
+    cfBd.style.color=pos?'var(--green)':'var(--red)';
+
+    document.getElementById('rp-netto').textContent=PCT(roiFlip);
+    document.getElementById('rp-cf').textContent=(profittoNetto>=0?'+':'-')+'€'+N(profittoNetto);
+    document.getElementById('rp-cap').textContent=PCT(roiFlip);
+    document.getElementById('rp-sub').textContent='Acquisto: '+EUR(prezzo)+' · Vendita: '+EUR(canone);
+    document.getElementById('rp-date').textContent=new Date().toLocaleDateString('it-IT');
+    return;
+  }
+
+  // ── AFFITTO / AIRBNB ──
+  const occ=isAir?sv('occ'):100;
+  const canoneAnnuo=isAir
+    ?(canone*365*(occ/100)*AIRBNB_NET)
+    :(canone*12*(occ/100));
+  const speseAnnue=spese*12;
+  // Cedolare (≤21%): base = canone lordo. IRPEF (>21%): base = 95% canone (5% forfait spese).
+  const imponibile=aliquota<=CEDOLARE_MAX?canoneAnnuo:canoneAnnuo*IRPEF_FORFAIT;
+  const imposte=imponibile*aliquota;
+  const redditoNetto=canoneAnnuo-speseAnnue-imposte;
+
+  const capitale=hasMutuo?prezzo*(1-ltv/100):prezzo;
+  const debito=hasMutuo?prezzo*(ltv/100):0;
+
+  let rataAnnua=0;
+  if(hasMutuo&&debito>0){
+    if(tasso===0){
+      rataAnnua=debito/anni;
+    }else{
+      const r=tasso/100;
+      rataAnnua=(debito*r*Math.pow(1+r,anni))/(Math.pow(1+r,anni)-1);
+    }
+  }
+
+  const cfAnnuo=redditoNetto-rataAnnua;
+  const cfMese=cfAnnuo/12;
+  const pos=cfMese>=0;
+
+  const rLordo=prezzo>0?(canoneAnnuo/prezzo)*100:0;
+  const rNetto=prezzo>0?(redditoNetto/prezzo)*100:0;
+  // Cap Rate = NOI / prezzo. NOI = reddito operativo netto: esclude imposte sul reddito e debito.
+  // Prima era identico a rNetto (= dopo imposte) → metrica duplicata e incoerente con la label "NOI / prezzo".
+  const noi=canoneAnnuo-speseAnnue;
+  const capRate=prezzo>0?(noi/prezzo)*100:0;
+  const coc=capitale>0?(cfAnnuo/capitale)*100:0;
+
+  const card=document.getElementById('cf-card');
+  card.className='cf-card '+(pos?'positive':'negative');
+  document.getElementById('cf-num').textContent=(pos?'+ ':'− ')+'€\u00a0'+N(Math.abs(cfMese));
+  document.getElementById('cf-tag').textContent=pos?'POSITIVO':'NEGATIVO';
+  document.getElementById('cf-tag').className='cf-tag '+(pos?'pos':'neg');
+  document.getElementById('cf-desc').textContent=pos
+    ?"✓ L'operazione genera liquidità ogni mese"
+    :'⚠ Cash flow negativo — rivedi i parametri';
+  document.getElementById('cf-desc').className='cf-desc '+(pos?'pos':'neg');
+
+  document.getElementById('m-netto').textContent=PCT(rNetto);
+  document.getElementById('m-lordo').textContent=PCT(rLordo);
+  document.getElementById('m-cap').textContent=PCT(capRate);
+  document.getElementById('m-coc').textContent=PCT(coc);
+  document.getElementById('m-coc-card').className='metric '+(coc>5?'hl-gold':'');
+
+  document.getElementById('bd-canone').textContent='+\u00a0'+EUR(canoneAnnuo);
+  document.getElementById('bd-spese').textContent='−\u00a0'+EUR(speseAnnue);
+  document.getElementById('bd-imposte').textContent='−\u00a0'+EUR(imposte);
+  document.getElementById('bd-mutuo').textContent='−\u00a0'+EUR(rataAnnua);
+  const cfBd=document.getElementById('bd-cf');
+  cfBd.textContent=(cfAnnuo>=0?'+\u00a0':'−\u00a0')+EUR(Math.abs(cfAnnuo));
+  cfBd.style.color=pos?'var(--green)':'var(--red)';
+
+  const proj=Array.from({length:11},(_,i)=>{
+    if(!i)return{anno:0,cf:0,valore:prezzo};
+    const ca=canoneAnnuo*Math.pow(1+GROWTH_CANONE,i);
+    const sa=speseAnnue*Math.pow(1+GROWTH_SPESE,i);
+    const imp=(aliquota<=CEDOLARE_MAX?ca:ca*IRPEF_FORFAIT)*aliquota;
+    return{anno:i,cf:(ca-sa-imp)-rataAnnua,valore:prezzo*Math.pow(1+riv/100,i)};
+  });
+  const cfCum=proj.slice(1).reduce((a,d)=>a+d.cf,0);
+  const plus=proj[10].valore-prezzo;
+
+  const stCf=document.getElementById('st-cf');
+  stCf.textContent=(cfCum>=0?'+':'−')+'\u00a0'+EUR(Math.abs(cfCum));
+  stCf.style.color=cfCum>=0?'var(--green)':'var(--red)';
+  document.getElementById('st-plus').textContent='+\u00a0'+EUR(plus);
+
+  drawChart(proj.slice(1),pos);
+
+  document.getElementById('rp-netto').textContent=PCT(rNetto);
+  document.getElementById('rp-cf').textContent=(cfMese>=0?'+':'-')+'€'+N(Math.abs(cfMese));
+  document.getElementById('rp-cap').textContent=PCT(capRate);
+  document.getElementById('rp-sub').textContent='Prezzo: '+EUR(prezzo)+' · '+document.getElementById('s-regime').selectedOptions[0].text.split('—')[0].trim();
+  document.getElementById('rp-date').textContent=new Date().toLocaleDateString('it-IT');
+}
+
+// ── REPORT TOGGLE ──
+function toggleReport(){
+  const w=document.getElementById('rp-wrap');
+  const btn=document.getElementById('btn-report');
+  const open=w.style.display==='block';
+  w.style.display=open?'none':'block';
+  if(btn)btn.textContent=open?'Vedi report di esempio ↓':'Nascondi report ↑';
+}
+
+// ── GENERA PDF ──
+function generatePDF() {
+  // Guardia freemium: il report è riservato agli utenti registrati (trial/paid)
+  const pdfBtn = document.getElementById('btn-pdf')
+  if (pdfBtn && pdfBtn.disabled) { openAuthGate(); return }
+
+  const btn = document.getElementById('btn-pdf')
+  const lbl = document.getElementById('btn-pdf-label')
+  if (btn) { btn.disabled = true }
+  if (lbl) { lbl.textContent = 'Generazione...' }
+
+  try {
+    const { jsPDF } = window.jspdf
+    const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' })
+
+    // Palette colori brand
+    const GREEN   = [0, 135, 90]
+    const GREEN2  = [0, 163, 108]
+    const INK     = [13, 17, 23]
+    const INK2    = [61, 68, 81]
+    const INK3    = [136, 146, 164]
+    const INK4    = [197, 204, 216]
+    const GOLD    = [196, 123, 0]
+    const RED     = [217, 43, 58]
+    const BG3     = [238, 240, 244]
+    const WHITE   = [255, 255, 255]
+
+    const W = 210   // larghezza A4 mm
+    const M = 14    // margine laterale
+    const CW = W - M * 2  // content width
+    let y = 0
+
+    // ── HEADER ──
+    doc.setFillColor(...GREEN)
+    doc.rect(0, 0, W, 22, 'F')
+
+    // Logo mark
+    doc.setFillColor(...GREEN2)
+    doc.roundedRect(M, 5, 12, 12, 2, 2, 'F')
+    doc.setDrawColor(...WHITE)
+    doc.setLineWidth(0.7)
+    doc.setLineCap('round')
+    doc.setLineJoin('round')
+    // Sparkline nel logo
+    doc.line(M+2, M+4, M+4.5, M+1.5)
+    doc.line(M+4.5, M+1.5, M+7, M+3.5)
+    doc.line(M+7, M+3.5, M+10, M-0.5)
+
+    doc.setFont('helvetica', 'bold')
+    doc.setFontSize(13)
+    doc.setTextColor(...WHITE)
+    doc.text('Consulenza con RenditaLab', M + 15, 13)
+
+    doc.setFont('helvetica', 'normal')
+    doc.setFontSize(7)
+    doc.setTextColor(255,255,255,0.6)
+    doc.text('Analisi Finanziaria Immobiliare', M + 15, 17.5)
+
+    // Data in alto a destra
+    doc.setFontSize(7)
+    doc.setTextColor(...WHITE)
+    const dataOggi = new Date().toLocaleDateString('it-IT', { day:'2-digit', month:'long', year:'numeric' })
+    doc.text(dataOggi, W - M, 13, { align: 'right' })
+    doc.text('Report generato automaticamente', W - M, 17.5, { align: 'right' })
+
+    y = 30
+
+    // ── TITOLO ──
+    doc.setFont('helvetica', 'bold')
+    doc.setFontSize(18)
+    doc.setTextColor(...INK)
+    doc.text('Analisi Investimento Immobiliare', M, y)
+    y += 5
+
+    // Sottotitolo con parametri chiave
+    const subText = document.getElementById('rp-sub').textContent || ''
+    doc.setFont('helvetica', 'normal')
+    doc.setFontSize(8.5)
+    doc.setTextColor(...INK3)
+    doc.text(subText, M, y)
+    y += 3
+
+    // Linea separatrice verde
+    doc.setDrawColor(...GREEN)
+    doc.setLineWidth(0.8)
+    doc.line(M, y, W - M, y)
+    y += 7
+
+    // ── LEGGI VALORI CORRENTI DAL DOM ──
+    const isFlip = (tipo === 'flip')
+    const isAir  = (tipo === 'airbnb')
+
+    const cfNum   = document.getElementById('cf-num').textContent.trim()
+    const cfPos   = document.getElementById('cf-card').classList.contains('positive')
+    const mNetto  = document.getElementById('m-netto').textContent.trim()
+    const mLordo  = document.getElementById('m-lordo').textContent.trim()
+    const mCap    = document.getElementById('m-cap').textContent.trim()
+    const mCoc    = document.getElementById('m-coc').textContent.trim()
+
+    // ── KPI CARDS (2 colonne) ──
+    if (!isFlip) {
+      const kpis = [
+        { label: 'Cash Flow Mensile', val: cfNum,   color: cfPos ? GREEN : RED,  bg: cfPos ? [230,247,241] : [253,240,241] },
+        { label: 'Rendimento Netto',  val: mNetto,  color: GREEN, bg: [230,247,241] },
+        { label: 'Cap Rate',          val: mCap,    color: INK,   bg: BG3 },
+        { label: 'Cash on Cash',      val: mCoc,    color: GOLD,  bg: [253,246,230] },
+      ]
+      const cardW = (CW - 6) / 2
+      const cardH = 18
+      kpis.forEach((k, i) => {
+        const cx = M + (i % 2) * (cardW + 6)
+        const cy = y + Math.floor(i / 2) * (cardH + 4)
+        doc.setFillColor(...k.bg)
+        doc.roundedRect(cx, cy, cardW, cardH, 2, 2, 'F')
+        doc.setDrawColor(...INK4)
+        doc.setLineWidth(0.2)
+        doc.roundedRect(cx, cy, cardW, cardH, 2, 2, 'S')
+        doc.setFont('helvetica', 'bold')
+        doc.setFontSize(6.5)
+        doc.setTextColor(...INK3)
+        doc.text(k.label.toUpperCase(), cx + 4, cy + 5.5)
+        doc.setFont('helvetica', 'bold')
+        doc.setFontSize(14)
+        doc.setTextColor(...k.color)
+        doc.text(k.val, cx + 4, cy + 13.5)
+      })
+      y += (cardH + 4) * 2 + 4
+    } else {
+      // Flip: singola KPI grande
+      const cardH = 22
+      doc.setFillColor(...(cfPos ? [230,247,241] : [253,240,241]))
+      doc.roundedRect(M, y, CW, cardH, 3, 3, 'F')
+      doc.setFont('helvetica', 'bold')
+      doc.setFontSize(7)
+      doc.setTextColor(...INK3)
+      doc.text('PROFITTO NETTO STIMATO', M + 5, y + 7)
+      doc.setFontSize(18)
+      doc.setTextColor(...(cfPos ? GREEN : RED))
+      doc.text(cfNum, M + 5, y + 17)
+      y += cardH + 6
+    }
+
+    // ── BREAKDOWN FLUSSO DI CASSA ──
+    doc.setFont('helvetica', 'bold')
+    doc.setFontSize(9)
+    doc.setTextColor(...INK)
+    doc.text('Flusso di Cassa Annuale', M, y)
+    y += 4
+
+    // Leggi righe breakdown dal DOM
+    const bdRows = []
+    const bdKeys = ['bd-key-canone','bd-key-spese']
+    const bdVals = ['bd-canone','bd-spese']
+    const bdColors = [GREEN, RED]
+
+    if (!isFlip) {
+      // regime fiscale
+      const regLabel = document.getElementById('bd-regime-label').textContent
+      bdRows.push({ key: 'Imposte ('+regLabel+')', val: document.getElementById('bd-imposte').textContent.trim(), color: RED })
+      // mutuo se attivo
+      if (hasMutuo) {
+        bdRows.push({ key: 'Rata mutuo annua', val: document.getElementById('bd-mutuo').textContent.trim(), color: [26,107,191] })
+      }
+    }
+
+    const tableBody = [
+      [isFlip ? 'Prezzo rivendita' : 'Canone annuo lordo', document.getElementById('bd-canone').textContent.trim()],
+      [isFlip ? 'Costi totali operazione' : 'Spese operative', document.getElementById('bd-spese').textContent.trim()],
+      ...bdRows.map(r => [r.key, r.val]),
+    ]
+    const cfRow = [isFlip ? 'Profitto netto stimato' : 'Cash flow annuo', document.getElementById('bd-cf').textContent.trim()]
+
+    doc.autoTable({
+      startY: y,
+      margin: { left: M, right: M },
+      head: [['Voce', 'Importo']],
+      body: [...tableBody, cfRow],
+      foot: [],
+      theme: 'plain',
+      styles: {
+        font: 'helvetica',
+        fontSize: 8.5,
+        cellPadding: { top: 3, bottom: 3, left: 4, right: 4 },
+        textColor: INK2,
+        lineColor: BG3,
+        lineWidth: 0.3,
+      },
+      headStyles: {
+        fillColor: BG3,
+        textColor: INK3,
+        fontStyle: 'bold',
+        fontSize: 7,
+      },
+      columnStyles: {
+        0: { cellWidth: CW * 0.62 },
+        1: { cellWidth: CW * 0.38, halign: 'right', fontStyle: 'bold' },
+      },
+      // Ultima riga in grassetto con bordo top
+      didDrawCell: (data) => {
+        const lastBodyRow = tableBody.length
+        if (data.section === 'body' && data.row.index === lastBodyRow) {
+          doc.setDrawColor(...INK)
+          doc.setLineWidth(0.5)
+          doc.line(data.cell.x, data.cell.y, data.cell.x + data.cell.width, data.cell.y)
+        }
+      },
+      willDrawCell: (data) => {
+        const lastBodyRow = tableBody.length
+        if (data.section === 'body' && data.row.index === lastBodyRow) {
+          data.cell.styles.fontStyle = 'bold'
+          data.cell.styles.textColor = cfPos ? GREEN : RED
+          data.cell.styles.fillColor = cfPos ? [230,247,241] : [253,240,241]
+        }
+      },
+    })
+
+    y = doc.lastAutoTable.finalY + 8
+
+    // ── PARAMETRI INPUT ──
+    doc.setFont('helvetica', 'bold')
+    doc.setFontSize(9)
+    doc.setTextColor(...INK)
+    doc.text('Parametri Analisi', M, y)
+    y += 4
+
+    const prezzoEl  = document.getElementById('v-prezzo').textContent.trim()
+    const canoneEl  = document.getElementById('v-canone').textContent.trim()
+    const speseEl   = document.getElementById('v-spese').textContent.trim()
+    const regimeEl  = !isFlip ? document.getElementById('s-regime').selectedOptions[0].text : '—'
+
+    const paramRows = [
+      ['Prezzo d\'acquisto', prezzoEl],
+      [isAir ? 'Canone/notte' : isFlip ? 'Prezzo rivendita' : 'Canone mensile', canoneEl],
+      [isFlip ? 'Costi totali' : 'Spese mensili', speseEl],
+    ]
+    if (!isFlip) {
+      paramRows.push(['Regime fiscale', regimeEl])
+      if (hasMutuo) {
+        paramRows.push(['LTV mutuo', document.getElementById('v-ltv').textContent.trim()])
+        paramRows.push(['Tasso interesse', document.getElementById('v-tasso').textContent.trim()])
+        paramRows.push(['Durata mutuo', document.getElementById('v-anni').textContent.trim()])
+      }
+      paramRows.push(['Rivalutazione/anno', document.getElementById('v-riv').textContent.trim()])
+    }
+
+    doc.autoTable({
+      startY: y,
+      margin: { left: M, right: M },
+      body: paramRows,
+      theme: 'plain',
+      styles: {
+        font: 'helvetica',
+        fontSize: 8,
+        cellPadding: { top: 2.5, bottom: 2.5, left: 4, right: 4 },
+        textColor: INK2,
+        lineColor: BG3,
+        lineWidth: 0.3,
+      },
+      columnStyles: {
+        0: { cellWidth: CW * 0.55, textColor: INK3, fontSize: 7.5 },
+        1: { cellWidth: CW * 0.45, halign: 'right', fontStyle: 'bold' },
+      },
+    })
+
+    y = doc.lastAutoTable.finalY + 8
+
+    // ── PROIEZIONE 10 ANNI (solo affitto/airbnb) ──
+    if (!isFlip) {
+      const cfCumEl  = document.getElementById('st-cf').textContent.trim()
+      const plusEl   = document.getElementById('st-plus').textContent.trim()
+      const rivEl    = document.getElementById('v-riv').textContent.trim()
+
+      // Controlla spazio: se meno di 50mm rimasti, nuova pagina
+      if (y > 200) { doc.addPage(); y = 20 }
+
+      doc.setFont('helvetica', 'bold')
+      doc.setFontSize(9)
+      doc.setTextColor(...INK)
+      doc.text('Proiezione 10 Anni', M, y)
+      doc.setFont('helvetica', 'normal')
+      doc.setFontSize(7.5)
+      doc.setTextColor(...INK3)
+      doc.text('Rivalutazione ' + rivEl + '/anno inclusa', M + 42, y)
+      y += 5
+
+      // Box sommario proiezione
+      const boxH = 16
+      const halfW = (CW - 4) / 2
+      // CF cumulativo
+      doc.setFillColor(...BG3)
+      doc.roundedRect(M, y, halfW, boxH, 2, 2, 'F')
+      doc.setFont('helvetica', 'bold')
+      doc.setFontSize(6.5)
+      doc.setTextColor(...INK3)
+      doc.text('CF CUMULATIVO 10 ANNI', M + 3, y + 5.5)
+      doc.setFontSize(12)
+      doc.setTextColor(...(cfPos ? GREEN : RED))
+      doc.text(cfCumEl, M + 3, y + 13)
+      // Plusvalenza
+      doc.setFillColor(...[253,246,230])
+      doc.roundedRect(M + halfW + 4, y, halfW, boxH, 2, 2, 'F')
+      doc.setFontSize(6.5)
+      doc.setTextColor(...INK3)
+      doc.text('APPREZZAMENTO IMMOBILE', M + halfW + 7, y + 5.5)
+      doc.setFontSize(12)
+      doc.setTextColor(...GOLD)
+      doc.text(plusEl, M + halfW + 7, y + 13)
+      y += boxH + 6
+
+      // Mini chart testuale (anni chiave)
+      const chartYrs = document.querySelectorAll('.chart-year')
+      if (chartYrs.length > 0) {
+        const chartData = []
+        chartYrs.forEach(el => {
+          const lines = el.textContent.trim().split('\n').map(s => s.trim()).filter(Boolean)
+          if (lines.length >= 2) chartData.push({ anno: lines[0], val: lines[1] })
+        })
+        if (chartData.length > 0) {
+          doc.autoTable({
+            startY: y,
+            margin: { left: M, right: M },
+            head: [chartData.map(d => d.anno)],
+            body: [chartData.map(d => d.val)],
+            theme: 'plain',
+            styles: {
+              font: 'helvetica',
+              fontSize: 7.5,
+              halign: 'center',
+              cellPadding: { top: 2.5, bottom: 2.5, left: 2, right: 2 },
+              textColor: INK2,
+              lineColor: BG3,
+              lineWidth: 0.3,
+            },
+            headStyles: {
+              fillColor: BG3,
+              textColor: INK3,
+              fontStyle: 'bold',
+              fontSize: 7,
+            },
+          })
+          y = doc.lastAutoTable.finalY + 6
+        }
+      }
+    }
+
+    // ── FOOTER ──
+    const pageCount = doc.internal.getNumberOfPages()
+    for (let i = 1; i <= pageCount; i++) {
+      doc.setPage(i)
+      const pageH = doc.internal.pageSize.getHeight()
+      doc.setFillColor(...BG3)
+      doc.rect(0, pageH - 12, W, 12, 'F')
+      doc.setFont('helvetica', 'normal')
+      doc.setFontSize(7)
+      doc.setTextColor(...INK3)
+      doc.text('Consulenza con RenditaLab — Analisi Finanziaria Immobiliare', M, pageH - 5)
+      doc.text('Pagina ' + i + ' di ' + pageCount, W - M, pageH - 5, { align: 'right' })
+      doc.text('Documento riservato · ' + new Date().toLocaleDateString('it-IT'), W / 2, pageH - 5, { align: 'center' })
+    }
+
+    // ── SALVA ──
+    const filename = 'RenditaLab_Analisi_' + new Date().toISOString().slice(0,10) + '.pdf'
+    doc.save(filename)
+
+  } catch (err) {
+    console.error('PDF error:', err)
+    alert('Errore nella generazione del PDF: ' + err.message)
+  } finally {
+    if (btn) { btn.disabled = false }
+    if (lbl) { lbl.textContent = 'Scarica Report PDF' }
+  }
+}
+
+// ── INIT APP ──
+document.getElementById('mutuo-fields').style.display='block';
+document.getElementById('bd-mutuo-row').style.display='flex';
+update();
+</script>
+</body>
+</html>

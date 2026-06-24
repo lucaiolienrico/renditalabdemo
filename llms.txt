@@ -1,0 +1,16 @@
+# RenditaLab — Demo
+
+> Calcolatore di rendimento immobiliare per il mercato italiano. Demo gratuita: cash flow, rendimento netto, ROI, Cap Rate, simulazione mutuo, proiezione a 10 anni, fiscalità italiana (cedolare secca 21%/10%, IRPEF).
+
+## Prodotto
+- Nome: RenditaLab (https://renditalab.it)
+- Demo: https://renditalabdemo.vercel.app/
+- Editore: RenditaLab — piattaforma italiana di analisi del rendimento immobiliare per agenzie, investitori e property manager.
+
+## Funzionalità demo
+- Cash flow mensile e annuo
+- Rendimento netto e lordo, Cap Rate, Cash on Cash
+- Cedolare secca 21% e 10% concordato, regime IRPEF
+- Simulazione mutuo e proiezione a 10 anni
+- Report PDF
+- Prova gratuita 3 giorni (registrazione email, nessuna carta). Accesso annuale €49,00.
