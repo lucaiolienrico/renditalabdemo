@@ -1,6 +1,6 @@
 # RenditaLab Demo — Audit & Patch
 
-Repo: `lucaiolienrico/rendimaxdemo` · Backend verificato live via Supabase MCP.
+Repo: `lucaiolienrico/renditabdemo` · Backend verificato live via Supabase MCP.
 
 ## Verdetto per layer
 
