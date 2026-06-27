@@ -733,8 +733,16 @@ function loadPayPalSDK() {
 async function mountPayPal(container) {
   if (!container) return
   const { data: { session } } = await sb.auth.getSession()
+  // Se l'utente vuole pagare subito (dal CTA esterno), salva l'intent prima di aprire il gate.
+  // Dopo il magic link → SIGNED_IN → scroll automatico a #pp-cta con i bottoni PayPal reali.
+  const insideGate = !!container.closest('#trial-gate')
   if (!session) {
-    container.innerHTML = '<button class="pp-need-login" onclick="openAuthGate()">Registrati gratis per attivare l\'accesso</button>'
+    if (insideGate) {
+      // Dentro il gate non richiamare openAuthGate() (loop): spiega cosa fare.
+      container.innerHTML = '<p style="font-size:.72rem;color:var(--ink3);text-align:center;margin:4px 0">Registrati con l\'email qui sopra. I pulsanti PayPal appariranno subito dopo il login.</p>'
+    } else {
+      container.innerHTML = '<button class="pp-need-login" onclick="sessionStorage.setItem(\'payIntent\',\'1\');openAuthGate()">Registrati gratis per attivare l\'accesso</button>'
+    }
     return
   }
   container.innerHTML = '<div class="pp-loading">Caricamento PayPal…</div>'
@@ -742,8 +750,10 @@ async function mountPayPal(container) {
   try {
     paypal = await loadPayPalSDK()
   } catch (e) {
-    console.error('[PayPal] SDK non caricato:', (e && e.message) || e)
-    container.innerHTML = '<p class="pp-err">PayPal non disponibile al momento. '
+    const _sdkErr = (e && e.message) || String(e)
+    console.error('[PayPal] SDK non caricato:', _sdkErr)
+    container.innerHTML = '<p class="pp-err">PayPal non disponibile.<br>'
+      + '<small style="word-break:break-all;opacity:.8">ERR_SDK: ' + _sdkErr + '</small><br>'
       + '<button class="pp-retry" onclick="mountPayPal(this.closest(\'.pp-mount\'))">Riprova</button></p>'
     return
   }
@@ -791,8 +801,10 @@ async function mountPayPal(container) {
   } catch (e) {
     // Mostra il motivo REALE invece di nasconderlo: client-id errato, valuta EUR non
     // abilitata sull'account, app non in stato Live, merchant non onboardato, ecc.
-    console.error('[PayPal] render fallito:', (e && e.message) || e)
-    container.innerHTML = '<p class="pp-err">Impossibile inizializzare PayPal. Dettaglio in console (F12).</p>'
+    const _renderErr = (e && e.message) || String(e)
+    console.error('[PayPal] render fallito:', _renderErr)
+    container.innerHTML = '<p class="pp-err">Impossibile inizializzare PayPal.<br>'
+      + '<small style="word-break:break-all;opacity:.8">ERR_RENDER: ' + _renderErr + '</small></p>'
   }
 }
 
@@ -1044,7 +1056,22 @@ async function checkTrial(session) {
   }
   mountPayPal(document.getElementById('pp-cta')) // CTA sempre presente in pagina
   sb.auth.onAuthStateChange(async (event, s) => {
-    if (event === 'SIGNED_IN' && s) await checkTrial(s)
+    if (event === 'SIGNED_IN' && s) {
+      await checkTrial(s)
+      // Utente aveva intenzione di pagare: scorri ai bottoni PayPal ora montati.
+      if (sessionStorage.getItem('payIntent')) {
+        sessionStorage.removeItem('payIntent')
+        setTimeout(() => {
+          const ppCta = document.getElementById('pp-cta')
+          if (ppCta) {
+            ppCta.scrollIntoView({ behavior: 'smooth', block: 'center' })
+            ppCta.style.transition = 'box-shadow .5s'
+            ppCta.style.boxShadow = '0 0 0 3px var(--green)'
+            setTimeout(() => { ppCta.style.boxShadow = '' }, 2500)
+          }
+        }, 700) // attende applyVisibility + mount PayPal
+      }
+    }
     if (event === 'SIGNED_OUT') applyVisibility('anon')
     mountPayPal(document.getElementById('pp-cta')) // ri-monta: alterna "registrati" ↔ bottoni
   })
