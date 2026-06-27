@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <!-- CSP via meta come fallback; gli header HTTP reali sono in vercel.json (host: Vercel).
      'unsafe-inline' necessario perché script/handler/style sono inline in questo file singolo. -->
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://www.paypal.com https://*.paypal.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: https://www.paypalobjects.com https://*.paypal.com; connect-src https://xpnpdkaaeudufupovsxm.supabase.co wss://xpnpdkaaeudufupovsxm.supabase.co https://www.paypal.com https://*.paypal.com; frame-src https://www.paypal.com https://*.paypal.com; form-action https://www.paypal.com; base-uri 'self'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://www.paypal.com https://*.paypal.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: https://www.paypalobjects.com https://*.paypal.com; connect-src https://xpnpdkaaeudufupovsxm.supabase.co wss://xpnpdkaaeudufupovsxm.supabase.co https://www.paypal.com https://*.paypal.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; frame-src https://www.paypal.com https://*.paypal.com; form-action https://www.paypal.com; base-uri 'self'; object-src 'none'">
 <title>Consulenza con RenditaLab — Calcola il rendimento del tuo immobile</title>
 <meta name="description" content="Calcola gratis il rendimento netto, cash flow e ROI del tuo immobile. Fiscalità italiana (cedolare secca, IRPEF), simulazione mutuo, proiezione 10 anni. Nessuna registrazione.">
 <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1">
@@ -357,6 +357,7 @@ footer a{color:var(--green);text-decoration:none}
 .pp-mount{width:100%;min-height:46px;display:flex;flex-direction:column;align-items:stretch;gap:8px}
 .pp-loading{font-size:.72rem;color:var(--ink3);text-align:center;padding:10px}
 .pp-err{font-size:.72rem;color:var(--red);text-align:center}
+.pp-retry{margin-left:6px;background:var(--bg3);border:1px solid var(--ink4);border-radius:8px;padding:4px 10px;font-size:.7rem;font-weight:600;cursor:pointer;color:var(--ink2);font-family:var(--sans)}
 .pp-need-login{width:100%;background:var(--green);color:#fff;border:none;border-radius:10px;padding:12px;font-size:.82rem;font-weight:600;cursor:pointer;font-family:var(--sans)}
 .pp-recheck{width:100%;background:transparent;border:1px solid var(--ink4);color:var(--ink2);border-radius:10px;padding:9px;font-size:.74rem;font-weight:600;cursor:pointer;font-family:var(--sans);margin-top:8px}
 .pp-recheck:hover{border-color:var(--ink2);color:var(--ink)}
@@ -706,14 +707,23 @@ let _ppSdk = null
 function loadPayPalSDK() {
   if (_ppSdk) return _ppSdk
   _ppSdk = new Promise((resolve, reject) => {
-    if (window.paypal) return resolve(window.paypal)
+    // SDK già montato (secondo mount nella stessa pagina): riusa solo se utilizzabile.
+    if (window.paypal && typeof window.paypal.Buttons === 'function') return resolve(window.paypal)
     if (!PAYPAL_CLIENT_ID || PAYPAL_CLIENT_ID.indexOf('INSERISCI') === 0) {
+      _ppSdk = null
       reject(new Error('paypal_client_id_missing')); return
     }
     const s = document.createElement('script')
-    s.src = 'https://www.paypal.com/sdk/js?client-id=' + encodeURIComponent(PAYPAL_CLIENT_ID) + '&currency=EUR&intent=capture'
-    s.onload = () => resolve(window.paypal)
-    s.onerror = () => reject(new Error('paypal_sdk_load_failed'))
+    s.src = 'https://www.paypal.com/sdk/js?client-id=' + encodeURIComponent(PAYPAL_CLIENT_ID)
+          + '&currency=EUR&intent=capture&components=buttons&disable-funding=credit,paylater'
+    // onload scatta ANCHE se PayPal risponde con uno script d'errore (client-id invalido):
+    // in quel caso window.paypal resta undefined o privo di .Buttons → va intercettato qui,
+    // altrimenti paypal.Buttons() lancia un TypeError opaco a valle.
+    s.onload = () => {
+      if (window.paypal && typeof window.paypal.Buttons === 'function') { resolve(window.paypal) }
+      else { _ppSdk = null; reject(new Error('paypal_sdk_loaded_but_unusable')) }
+    }
+    s.onerror = () => { _ppSdk = null; reject(new Error('paypal_sdk_load_failed')) }
     document.head.appendChild(s)
   })
   return _ppSdk
@@ -729,11 +739,17 @@ async function mountPayPal(container) {
   }
   container.innerHTML = '<div class="pp-loading">Caricamento PayPal…</div>'
   let paypal
-  try { paypal = await loadPayPalSDK() }
-  catch (e) { container.innerHTML = '<p class="pp-err">PayPal non disponibile al momento.</p>'; return }
+  try {
+    paypal = await loadPayPalSDK()
+  } catch (e) {
+    console.error('[PayPal] SDK non caricato:', (e && e.message) || e)
+    container.innerHTML = '<p class="pp-err">PayPal non disponibile al momento. '
+      + '<button class="pp-retry" onclick="mountPayPal(this.closest(\'.pp-mount\'))">Riprova</button></p>'
+    return
+  }
   container.innerHTML = ''
   try {
-    await paypal.Buttons({
+    const buttons = paypal.Buttons({
       style: { layout: 'vertical', color: 'gold', shape: 'rect', label: 'pay', height: 42 },
       // Ordine creato lato server: importo e custom_id non sono manomettibili dal client.
       createOrder: async () => {
@@ -763,10 +779,20 @@ async function mountPayPal(container) {
           alert('Pagamento ricevuto. Se l\'accesso non si sblocca subito, usa "Ho pagato → ricontrolla".')
         }
       },
-      onError: (err) => { console.error('PayPal error:', err) }
-    }).render(container)
+      onError: (err) => { console.error('[PayPal] onError:', err) }
+    })
+    // Eligibilità: se nessun funding è disponibile (valuta/account), render() non mostra nulla.
+    if (typeof buttons.isEligible === 'function' && !buttons.isEligible()) {
+      console.error('[PayPal] Buttons non eleggibili (valuta/account/funding).')
+      container.innerHTML = '<p class="pp-err">PayPal non disponibile per questo account o valuta.</p>'
+      return
+    }
+    await buttons.render(container)
   } catch (e) {
-    container.innerHTML = '<p class="pp-err">Impossibile inizializzare PayPal.</p>'
+    // Mostra il motivo REALE invece di nasconderlo: client-id errato, valuta EUR non
+    // abilitata sull'account, app non in stato Live, merchant non onboardato, ecc.
+    console.error('[PayPal] render fallito:', (e && e.message) || e)
+    container.innerHTML = '<p class="pp-err">Impossibile inizializzare PayPal. Dettaglio in console (F12).</p>'
   }
 }
 
