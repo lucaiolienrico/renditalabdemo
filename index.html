@@ -729,82 +729,96 @@ function loadPayPalSDK() {
   return _ppSdk
 }
 
+// Guard contro mount concorrenti: se mountPayPal è già in esecuzione su un dato container
+// (es. mount iniziale + onAuthStateChange sparati quasi in simultanea), la seconda chiamata
+// viene scartata silenziosamente invece di svuotare il container durante buttons.render().
+const _ppMounting = new WeakMap()
+
 // Monta gli Smart Buttons nel container. Richiede sessione (serve user_id per il custom_id).
 async function mountPayPal(container) {
   if (!container) return
-  const { data: { session } } = await sb.auth.getSession()
-  // Se l'utente vuole pagare subito (dal CTA esterno), salva l'intent prima di aprire il gate.
-  // Dopo il magic link → SIGNED_IN → scroll automatico a #pp-cta con i bottoni PayPal reali.
-  const insideGate = !!container.closest('#trial-gate')
-  if (!session) {
-    if (insideGate) {
-      // Dentro il gate non richiamare openAuthGate() (loop): spiega cosa fare.
-      container.innerHTML = '<p style="font-size:.72rem;color:var(--ink3);text-align:center;margin:4px 0">Registrati con l\'email qui sopra. I pulsanti PayPal appariranno subito dopo il login.</p>'
-    } else {
-      container.innerHTML = '<button class="pp-need-login" onclick="sessionStorage.setItem(\'payIntent\',\'1\');openAuthGate()">Registrati gratis per attivare l\'accesso</button>'
-    }
-    return
-  }
-  container.innerHTML = '<div class="pp-loading">Caricamento PayPal…</div>'
-  let paypal
+  // Se un mount è già in corso su questo container, scarta: evita la race condition
+  // "Detected container element removed from DOM" causata da innerHTML='' concorrente.
+  if (_ppMounting.get(container)) return
+  _ppMounting.set(container, true)
   try {
-    paypal = await loadPayPalSDK()
-  } catch (e) {
-    const _sdkErr = (e && e.message) || String(e)
-    console.error('[PayPal] SDK non caricato:', _sdkErr)
-    container.innerHTML = '<p class="pp-err">PayPal non disponibile.<br>'
-      + '<small style="word-break:break-all;opacity:.8">ERR_SDK: ' + _sdkErr + '</small><br>'
-      + '<button class="pp-retry" onclick="mountPayPal(this.closest(\'.pp-mount\'))">Riprova</button></p>'
-    return
-  }
-  container.innerHTML = ''
-  try {
-    const buttons = paypal.Buttons({
-      style: { layout: 'vertical', color: 'gold', shape: 'rect', label: 'pay', height: 42 },
-      // Ordine creato lato server: importo e custom_id non sono manomettibili dal client.
-      createOrder: async () => {
-        const { data: { session: s } } = await sb.auth.getSession()
-        const r = await fetch(FN + '/paypal-create-order', {
-          method: 'POST',
-          headers: { 'Authorization': 'Bearer ' + s.access_token, 'apikey': SUPABASE_ANON, 'Content-Type': 'application/json' }
-        })
-        const d = await r.json()
-        if (!d.ok) throw new Error(d.reason || 'create_failed')
-        return d.id
-      },
-      // Cattura lato server con validazione importo + custom_id == utente.
-      onApprove: async (data) => {
-        const { data: { session: s } } = await sb.auth.getSession()
-        const r = await fetch(FN + '/paypal-capture-order', {
-          method: 'POST',
-          headers: { 'Authorization': 'Bearer ' + s.access_token, 'apikey': SUPABASE_ANON, 'Content-Type': 'application/json' },
-          body: JSON.stringify({ orderID: data.orderID })
-        })
-        const d = await r.json()
-        if (d.ok && d.paid) {
-          applyVisibility('paid')
-          const gate = document.getElementById('trial-gate')
-          if (gate) { gate.classList.remove('visible'); gate.innerHTML = ''; unlockBody() }
-        } else {
-          alert('Pagamento ricevuto. Se l\'accesso non si sblocca subito, usa "Ho pagato → ricontrolla".')
-        }
-      },
-      onError: (err) => { console.error('[PayPal] onError:', err) }
-    })
-    // Eligibilità: se nessun funding è disponibile (valuta/account), render() non mostra nulla.
-    if (typeof buttons.isEligible === 'function' && !buttons.isEligible()) {
-      console.error('[PayPal] Buttons non eleggibili (valuta/account/funding).')
-      container.innerHTML = '<p class="pp-err">PayPal non disponibile per questo account o valuta.</p>'
+    const { data: { session } } = await sb.auth.getSession()
+    // Se l'utente vuole pagare subito (dal CTA esterno), salva l'intent prima di aprire il gate.
+    // Dopo il magic link → SIGNED_IN → scroll automatico a #pp-cta con i bottoni PayPal reali.
+    const insideGate = !!container.closest('#trial-gate')
+    if (!session) {
+      if (insideGate) {
+        // Dentro il gate non richiamare openAuthGate() (loop): spiega cosa fare.
+        container.innerHTML = '<p style="font-size:.72rem;color:var(--ink3);text-align:center;margin:4px 0">Registrati con l\'email qui sopra. I pulsanti PayPal appariranno subito dopo il login.</p>'
+      } else {
+        container.innerHTML = '<button class="pp-need-login" onclick="sessionStorage.setItem(\'payIntent\',\'1\');openAuthGate()">Registrati gratis per attivare l\'accesso</button>'
+      }
       return
     }
-    await buttons.render(container)
-  } catch (e) {
-    // Mostra il motivo REALE invece di nasconderlo: client-id errato, valuta EUR non
-    // abilitata sull'account, app non in stato Live, merchant non onboardato, ecc.
-    const _renderErr = (e && e.message) || String(e)
-    console.error('[PayPal] render fallito:', _renderErr)
-    container.innerHTML = '<p class="pp-err">Impossibile inizializzare PayPal.<br>'
-      + '<small style="word-break:break-all;opacity:.8">ERR_RENDER: ' + _renderErr + '</small></p>'
+    container.innerHTML = '<div class="pp-loading">Caricamento PayPal…</div>'
+    let paypal
+    try {
+      paypal = await loadPayPalSDK()
+    } catch (e) {
+      const _sdkErr = (e && e.message) || String(e)
+      console.error('[PayPal] SDK non caricato:', _sdkErr)
+      container.innerHTML = '<p class="pp-err">PayPal non disponibile.<br>'
+        + '<small style="word-break:break-all;opacity:.8">ERR_SDK: ' + _sdkErr + '</small><br>'
+        + '<button class="pp-retry" onclick="mountPayPal(this.closest(\'.pp-mount\'))">Riprova</button></p>'
+      return
+    }
+    container.innerHTML = ''
+    try {
+      const buttons = paypal.Buttons({
+        style: { layout: 'vertical', color: 'gold', shape: 'rect', label: 'pay', height: 42 },
+        // Ordine creato lato server: importo e custom_id non sono manomettibili dal client.
+        createOrder: async () => {
+          const { data: { session: s } } = await sb.auth.getSession()
+          const r = await fetch(FN + '/paypal-create-order', {
+            method: 'POST',
+            headers: { 'Authorization': 'Bearer ' + s.access_token, 'apikey': SUPABASE_ANON, 'Content-Type': 'application/json' }
+          })
+          const d = await r.json()
+          if (!d.ok) throw new Error(d.reason || 'create_failed')
+          return d.id
+        },
+        // Cattura lato server con validazione importo + custom_id == utente.
+        onApprove: async (data) => {
+          const { data: { session: s } } = await sb.auth.getSession()
+          const r = await fetch(FN + '/paypal-capture-order', {
+            method: 'POST',
+            headers: { 'Authorization': 'Bearer ' + s.access_token, 'apikey': SUPABASE_ANON, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ orderID: data.orderID })
+          })
+          const d = await r.json()
+          if (d.ok && d.paid) {
+            applyVisibility('paid')
+            const gate = document.getElementById('trial-gate')
+            if (gate) { gate.classList.remove('visible'); gate.innerHTML = ''; unlockBody() }
+          } else {
+            alert('Pagamento ricevuto. Se l\'accesso non si sblocca subito, usa "Ho pagato → ricontrolla".')
+          }
+        },
+        onError: (err) => { console.error('[PayPal] onError:', err) }
+      })
+      // Eligibilità: se nessun funding è disponibile (valuta/account), render() non mostra nulla.
+      if (typeof buttons.isEligible === 'function' && !buttons.isEligible()) {
+        console.error('[PayPal] Buttons non eleggibili (valuta/account/funding).')
+        container.innerHTML = '<p class="pp-err">PayPal non disponibile per questo account o valuta.</p>'
+        return
+      }
+      await buttons.render(container)
+    } catch (e) {
+      // Mostra il motivo REALE invece di nasconderlo: client-id errato, valuta EUR non
+      // abilitata sull'account, app non in stato Live, merchant non onboardato, ecc.
+      const _renderErr = (e && e.message) || String(e)
+      console.error('[PayPal] render fallito:', _renderErr)
+      container.innerHTML = '<p class="pp-err">Impossibile inizializzare PayPal.<br>'
+        + '<small style="word-break:break-all;opacity:.8">ERR_RENDER: ' + _renderErr + '</small></p>'
+    }
+  } finally {
+    // Sempre rilasciato: anche se il container è stato rimosso dal DOM nel frattempo.
+    _ppMounting.delete(container)
   }
 }
 
@@ -1071,9 +1085,16 @@ async function checkTrial(session) {
           }
         }, 700) // attende applyVisibility + mount PayPal
       }
+      // Mount del CTA solo su SIGNED_IN: alterna "registrati" → bottoni PayPal reali.
+      // Non serve su TOKEN_REFRESHED, PASSWORD_RECOVERY, ecc. e soprattutto non va
+      // chiamato mentre il mount iniziale (riga sopra) è ancora in corso → race condition.
+      mountPayPal(document.getElementById('pp-cta'))
     }
-    if (event === 'SIGNED_OUT') applyVisibility('anon')
-    mountPayPal(document.getElementById('pp-cta')) // ri-monta: alterna "registrati" ↔ bottoni
+    if (event === 'SIGNED_OUT') {
+      applyVisibility('anon')
+      // Su logout l'utente vede di nuovo il pulsante "Registrati": ri-monta il CTA.
+      mountPayPal(document.getElementById('pp-cta'))
+    }
   })
 })()
 
