@@ -4,7 +4,7 @@
     {
       "source": "/(.*)",
       "headers": [
-        { "key": "Content-Security-Policy", "value": "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://www.paypal.com https://*.paypal.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: https://www.paypalobjects.com https://*.paypal.com; connect-src https://xpnpdkaaeudufupovsxm.supabase.co wss://xpnpdkaaeudufupovsxm.supabase.co https://www.paypal.com https://*.paypal.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; frame-src https://www.paypal.com https://*.paypal.com; form-action https://www.paypal.com; base-uri 'self'; object-src 'none'; frame-ancestors 'none'" },
+        { "key": "Content-Security-Policy", "value": "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://www.paypal.com https://*.paypal.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: https://www.paypalobjects.com https://*.paypal.com; connect-src https://xpnpdkaaeudufupovsxm.supabase.co wss://xpnpdkaaeudufupovsxm.supabase.co https://www.paypal.com https://*.paypal.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; frame-src https://www.paypal.com https://*.paypal.com blob:; form-action https://www.paypal.com; base-uri 'self'; object-src blob:; frame-ancestors 'none'" },
         { "key": "Strict-Transport-Security", "value": "max-age=63072000; includeSubDomains; preload" },
         { "key": "X-Content-Type-Options", "value": "nosniff" },
         { "key": "X-Frame-Options", "value": "DENY" },
