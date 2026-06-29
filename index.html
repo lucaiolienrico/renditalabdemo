@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <!-- CSP via meta come fallback; gli header HTTP reali sono in vercel.json (host: Vercel).
      'unsafe-inline' necessario perché script/handler/style sono inline in questo file singolo. -->
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://www.paypal.com https://*.paypal.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: https://www.paypalobjects.com https://*.paypal.com; connect-src https://xpnpdkaaeudufupovsxm.supabase.co wss://xpnpdkaaeudufupovsxm.supabase.co https://www.paypal.com https://*.paypal.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; frame-src https://www.paypal.com https://*.paypal.com; form-action https://www.paypal.com; base-uri 'self'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://www.paypal.com https://*.paypal.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: https://www.paypalobjects.com https://*.paypal.com; connect-src https://xpnpdkaaeudufupovsxm.supabase.co wss://xpnpdkaaeudufupovsxm.supabase.co https://www.paypal.com https://*.paypal.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; frame-src https://www.paypal.com https://*.paypal.com blob:; form-action https://www.paypal.com; base-uri 'self'; object-src blob:">
 <title>Consulenza con RenditaLab — Calcola il rendimento del tuo immobile</title>
 <meta name="description" content="Calcola gratis il rendimento netto, cash flow e ROI del tuo immobile. Fiscalità italiana (cedolare secca, IRPEF), simulazione mutuo, proiezione 10 anni. Nessuna registrazione.">
 <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1">
@@ -1772,8 +1772,28 @@ function generatePDF() {
     }
 
     // ── SALVA ──
+    // doc.save() di jsPDF, in webview / browser embedded che ignorano l'attributo
+    // download dell'anchor, ricade su window.open(blob) → finestra "about:blank" vuota
+    // (il documento blob viene poi bloccato dalla CSP ereditata). Forziamo invece il
+    // download con un anchor download esplicito; se l'ambiente non lo supporta,
+    // fallback a navigazione diretta nella stessa scheda (niente popup orfano).
     const filename = 'RenditaLab_Analisi_' + new Date().toISOString().slice(0,10) + '.pdf'
-    doc.save(filename)
+    const blob = doc.output('blob')
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    if ('download' in a) {
+      a.href = url
+      a.download = filename
+      a.rel = 'noopener'
+      document.body.appendChild(a)
+      a.click()
+      a.remove()
+    } else {
+      // Ambiente senza supporto download: apri il PDF nella scheda corrente.
+      location.href = url
+    }
+    // Revoca differita: alcuni browser leggono il blob in modo asincrono dopo il click.
+    setTimeout(() => URL.revokeObjectURL(url), 4000)
 
   } catch (err) {
     console.error('PDF error:', err)
